@@ -1,0 +1,46 @@
+{
+    "name": "freis/filament-crud-generator",
+    "description": "Gerador de CRUD para Filament v3",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Freis\\FilamentCrudGenerator\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Freis\\FilamentCrudGenerator\\Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Felipe Reis",
+            "email": "freis.dev@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": "^8.1",
+        "filament/filament": "^3.0",
+        "laravel/framework": "^10.0|^11.0|^12.0",
+        "friendsofphp/php-cs-fixer": "^3.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0",
+        "phpunit/phpunit": "^10.0|^11.0"
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "cs-fix": [
+            "php-cs-fixer fix --config=src/config/php-cs-fixer.dist.php.example"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Freis\\FilamentCrudGenerator\\Providers\\FilamentCrudGeneratorServiceProvider"
+            ]
+        }
+    }
+} 
