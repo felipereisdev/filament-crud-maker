@@ -129,7 +129,7 @@ name:type[:default][:validation...]
 |---|---|---|
 | `name` | Yes | The database column / field name (snake_case) |
 | `type` | Yes | The field type (see [Supported Field Types](#supported-field-types)) |
-| `default` | No | Default value. Use `true`/`false` for booleans, numbers for numeric types, or strings for text |
+| `default` | No | Default value. Use `true`/`false` for booleans, numbers for numeric types, or a plain string for text/select types (e.g. `active`, `expense`). Applied to both the form component and the migration column. |
 | `validation` | No | One or more validation rules. Rules with values use `=` syntax (e.g. `min=3`) |
 
 **Examples:**
@@ -149,6 +149,12 @@ price:decimal:0:required:min=0
 
 # Field with between validation
 score:integer:required:between=0,100
+
+# Select field with string default
+type:select:expense:required
+
+# String field with column length
+name:string:required:max=100
 ```
 
 ---
@@ -195,7 +201,7 @@ score:integer:required:between=0,100
 
 | Type | Form Component | Table Column | Migration Type |
 |---|---|---|---|
-| `select` | `Select` | `TextColumn` (badge) | `string` |
+| `select` | `Select` | `TextColumn` (badge, searchable, sortable) | `string` |
 | `enum` | `Select` | `TextColumn` (badge) | `string` |
 | `foreignId` | `Select` (with relationship) | `TextColumn` (relationship) | `foreignId` |
 | `checkboxes` | `CheckboxList` | `TextColumn` | `json` |
@@ -206,8 +212,8 @@ score:integer:required:between=0,100
 
 | Type | Form Component | Table Column | Migration Type |
 |---|---|---|---|
-| `file` | `FileUpload` | `TextColumn` | `string` |
-| `image` | `FileUpload` (image, 16:9 crop) | `ImageColumn` (circular) | `string` |
+| `file` | `FileUpload` (`disk: public`, `dir: uploads`) | `TextColumn` | `string` |
+| `image` | `FileUpload` (image, 16:9 crop, `disk: public`, `dir: images`) | `ImageColumn` (circular) | `string` |
 
 ### Rich Content
 
@@ -236,7 +242,7 @@ Apply validation rules to fields using the `rule` or `rule=value` syntax after t
 |---|---|---|---|
 | Required | `required` | `->required()` | Field must be filled |
 | Minimum | `min=N` | `->minLength(N)` or `->minValue(N)` | Min length (text) or min value (numeric) |
-| Maximum | `max=N` | `->maxLength(N)` or `->maxValue(N)` | Max length (text) or max value (numeric) |
+| Maximum | `max=N` | `->maxLength(N)` or `->maxValue(N)` | Max length (text) or max value (numeric). For `string` fields, also sets the column length in the migration: `$table->string('name', N)` |
 | Between | `between=X,Y` | `->minValue(X)->maxValue(Y)` | Value must be between X and Y |
 | Email | `email` | `->email()` | Must be a valid email address |
 | URL | `url` | `->url()` | Must be a valid URL |
@@ -276,8 +282,8 @@ You can optionally specify fields for the related model. If the related model do
 | `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model |
 | `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model |
 | `morphTo` | Polymorphic inverse (e.g. Comment belongs to Post or Video) | Adds `$table->morphs('{morphName}')` to migration; the second segment is the morph name |
-| `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method with auto-derived morph name (`{snake(parent)}able`) |
-| `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method with auto-derived morph name (`{snake(parent)}able`) |
+| `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method with auto-derived morph name (`{snake(relatedModel)}able`) |
+| `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method with auto-derived morph name (`{snake(relatedModel)}able`) |
 
 **Polymorphic examples:**
 
@@ -291,7 +297,7 @@ You can optionally specify fields for the related model. If the related model do
 
 For `morphTo`, the second segment is the **morph name** (e.g. `commentable`), not a model class. The generator adds `$table->morphs('commentable')` to the migration and `$this->morphTo()` to the model.
 
-For `morphOne` and `morphMany`, the second segment is the **related model class**. The morph name is automatically derived as `{snake(parentModel)}able` (e.g. `postable` for model `Post`).
+For `morphOne` and `morphMany`, the second segment is the **related model class**. The morph name is automatically derived as `{snake(relatedModel)}able` (e.g. `imageable` for related model `Image`, `commentable` for `Comment`).
 
 ### Examples
 
@@ -386,7 +392,7 @@ For each model, the generator creates or updates:
 | **Migration** | `database/migrations/xxxx_create_{table}_table.php` | Migration with all column types, foreign keys, defaults, nullable/unique constraints |
 | **Resource** | `app/Filament/Resources/{Model}Resource.php` | Filament resource entry point |
 | **Schema** | `.../{Model}Resource/Schemas/{Model}Form.php` | Form schema with all field components (Filament v4 structure) |
-| **Table** | `.../{Model}Resource/Tables/{Model}sTable.php` | Table with columns, filters, edit actions, and bulk delete (Filament v4 structure) |
+| **Table** | `.../{Model}Resource/Tables/{PluralModel}Table.php` | Table with columns, filters, edit actions, and bulk delete (Filament v4 structure) |
 
 **Automatic features:**
 

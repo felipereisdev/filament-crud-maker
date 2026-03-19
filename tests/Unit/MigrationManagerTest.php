@@ -141,6 +141,47 @@ it('adds default value when provided', function () {
     $this->manager->updateMigration('Post', ['sort_order:integer:0']);
 });
 
+it('adds string default value for select type with string default', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->string('type')->default('expense')");
+    });
+
+    $this->manager->updateMigration('Post', ['type:select:expense:required']);
+});
+
+it('applies max=N as string column length for string type', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->string('name', 50)");
+    });
+
+    $this->manager->updateMigration('Post', ['name:string:required:max=50']);
+});
+
+it('does not apply max=N as length for non-string types', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        // Should be integer without a length argument
+        return str_contains($content, "\$table->integer('count')")
+            && ! str_contains($content, "\$table->integer('count', 10)");
+    });
+
+    $this->manager->updateMigration('Post', ['count:integer:max=10']);
+});
+
 // --- Relations ---
 
 it('adds foreignId with constrained for belongsTo relations', function () {

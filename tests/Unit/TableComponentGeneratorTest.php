@@ -40,7 +40,15 @@ it('generates ImageColumn with circular for image type', function () {
         ->toContain('->circular()');
 });
 
-// --- Badge behavior (enum and tags) ---
+// --- Badge behavior (select, enum and tags) ---
+
+it('generates TextColumn with badge and searchable for select type', function () {
+    $result = $this->generator->generateColumn('status', 'select');
+    expect($result)
+        ->toContain("TextColumn::make('status')")
+        ->toContain('->badge()')
+        ->toContain('->searchable()->sortable()');
+});
 
 it('generates TextColumn with badge for enum type', function () {
     $result = $this->generator->generateColumn('status', 'enum');

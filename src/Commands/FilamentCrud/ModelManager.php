@@ -315,12 +315,12 @@ PHP;
     }
 
     /**
-     * Generates a morphOne method. The morph name is derived from the parent model.
+     * Generates a morphOne method. The morph name is derived from the related model.
      */
     private function generateMorphOneMethod(string $relatedModel, string $parentModel): string
     {
         $relationName = Str::camel($relatedModel);
-        $morphName = Str::snake($parentModel).'able';
+        $morphName = Str::snake($relatedModel).'able';
         $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
@@ -333,12 +333,12 @@ PHP;
     }
 
     /**
-     * Generates a morphMany method. The morph name is derived from the parent model.
+     * Generates a morphMany method. The morph name is derived from the related model.
      */
     private function generateMorphManyMethod(string $relatedModel, string $parentModel): string
     {
         $relationName = Str::camel(Str::plural($relatedModel));
-        $morphName = Str::snake($parentModel).'able';
+        $morphName = Str::snake($relatedModel).'able';
         $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
@@ -375,6 +375,7 @@ PHP;
             'json' => 'array',
             'tags' => 'array',
             'keyvalue' => 'array',
+            'enum' => 'string',
         ];
 
         foreach ($fields as $field) {

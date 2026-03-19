@@ -26,11 +26,15 @@ class FormComponentGenerator
             'checkboxes' => "CheckboxList::make('{$fieldName}')",
             'radio' => "Radio::make('{$fieldName}')",
             'color' => "ColorPicker::make('{$fieldName}')",
-            'file' => "FileUpload::make('{$fieldName}')",
+            'file' => "FileUpload::make('{$fieldName}')"
+                ."->disk('public')"
+                ."->directory('uploads')",
             'image' => "FileUpload::make('{$fieldName}')"
                 .'->image()'
                 ."->imageResizeMode('cover')"
-                ."->imageCropAspectRatio('16:9')",
+                ."->imageCropAspectRatio('16:9')"
+                ."->disk('public')"
+                ."->directory('images')",
             'richtext', 'editor' => "RichEditor::make('{$fieldName}')",
             'markdown' => "MarkdownEditor::make('{$fieldName}')",
             'tags' => "TagsInput::make('{$fieldName}')",
@@ -142,8 +146,12 @@ class FormComponentGenerator
             $closeBracePos = $validator->findMatchingCloseBrace($content, $openBracePos);
 
             if ($closeBracePos !== false) {
+                // Detect whether the method uses $form (inline resource) or $schema (Schema class)
+                $matchedSignature = $formMatches[0][0];
+                $paramVar = str_contains($matchedSignature, '$schema') ? '$schema' : '$form';
+
                 $newFormFunction = substr($content, $formStartPos, $openBracePos - $formStartPos + 1);
-                $newFormFunction .= "\n        return \$schema\n            ->components([\n";
+                $newFormFunction .= "\n        return {$paramVar}\n            ->components([\n";
 
                 foreach ($formFields as $field) {
                     $newFormFunction .= "                {$field},\n";

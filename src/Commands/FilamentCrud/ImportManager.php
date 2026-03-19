@@ -124,10 +124,16 @@ class ImportManager
         $resourceNamespace = NamespaceHelper::resourceNamespace();
         $modelNamespace = NamespaceHelper::modelNamespace();
 
+        // Extract the actual namespace declared in the file (may be a sub-namespace in Filament v5)
+        $actualResourceNamespace = $resourceNamespace;
+        if (preg_match('/namespace\s+([^;]+);/', $content, $nsMatch)) {
+            $actualResourceNamespace = trim($nsMatch[1]);
+        }
+
         // Add default imports required for any Filament resource
         $requiredImports = [
-            'use '.$resourceNamespace.'\\'.$model.'Resource\\Pages;',
-            'use '.$resourceNamespace.'\\'.$model.'Resource\\RelationManagers;',
+            'use '.$actualResourceNamespace.'\\'.$model.'Resource\\Pages;',
+            'use '.$actualResourceNamespace.'\\'.$model.'Resource\\RelationManagers;',
             'use '.$modelNamespace.'\\'.$model.';',
             'use Filament\Resources\Resource;',
             'use Filament\Schemas\Schema;',
@@ -139,8 +145,9 @@ class ImportManager
         $imports = array_unique($imports);
         sort($imports); // Sort for readability
 
-        // Find the position right after the namespace to add imports
-        $namespacePattern = '/namespace\s+'.preg_quote($resourceNamespace, '/').';/';
+        // Find the position right after the namespace to add imports.
+        // The pattern supports sub-namespaces (e.g. App\Filament\Resources\Categories in Filament v5).
+        $namespacePattern = '/namespace\s+'.preg_quote($resourceNamespace, '/').'(?:\\\\[A-Za-z0-9_]+)*;/';
         if (preg_match($namespacePattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
             $namespaceEndPos = $matches[0][1] + strlen($matches[0][0]);
 

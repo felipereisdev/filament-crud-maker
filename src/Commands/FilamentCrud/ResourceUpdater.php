@@ -89,7 +89,7 @@ class ResourceUpdater
         // Detect Schemas/Tables directory structure
         $resourceDir = $this->resolveResourceDir($model);
         $schemaPath = $resourceDir !== null ? $resourceDir.'/Schemas/'.$model.'Form.php' : null;
-        $tablePath = $resourceDir !== null ? $resourceDir.'/Tables/'.$model.'sTable.php' : null;
+        $tablePath = $resourceDir !== null ? $resourceDir.'/Tables/'.Str::plural($model).'Table.php' : null;
 
         if (
             $resourceDir !== null
@@ -313,7 +313,7 @@ class ResourceUpdater
         }
 
         File::put($tablePath, $content);
-        $this->log("Table {$model}sTable updated successfully!");
+        $this->log('Table '.Str::plural($model).'Table updated successfully!');
 
         return true;
     }

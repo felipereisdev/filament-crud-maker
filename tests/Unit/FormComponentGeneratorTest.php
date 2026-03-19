@@ -79,14 +79,14 @@ it('generates ColorPicker for color type', function () {
     expect($result)->toBe("ColorPicker::make('hex_color')");
 });
 
-it('generates FileUpload for file type', function () {
+it('generates FileUpload with disk and directory for file type', function () {
     $result = $this->generator->generate('document', 'file');
-    expect($result)->toBe("FileUpload::make('document')");
+    expect($result)->toBe("FileUpload::make('document')->disk('public')->directory('uploads')");
 });
 
-it('generates FileUpload with image options for image type', function () {
+it('generates FileUpload with image options, disk and directory for image type', function () {
     $result = $this->generator->generate('avatar', 'image');
-    expect($result)->toBe("FileUpload::make('avatar')->image()->imageResizeMode('cover')->imageCropAspectRatio('16:9')");
+    expect($result)->toBe("FileUpload::make('avatar')->image()->imageResizeMode('cover')->imageCropAspectRatio('16:9')->disk('public')->directory('images')");
 });
 
 it('generates RichEditor for richtext type', function () {
@@ -306,7 +306,7 @@ it('returns correct component type for each field type', function (string $field
 
 // --- updateFormMethod() ---
 
-it('inserts fields into form method with Form signature', function () {
+it('inserts fields into form method with Form signature using $form variable', function () {
     $content = <<<'PHP'
 <?php
 
@@ -328,13 +328,14 @@ PHP;
     $result = $this->generator->updateFormMethod($content, $fields, $validator);
 
     expect($result)
-        ->toContain('$schema')
+        ->toContain('$form')
+        ->not->toContain('$schema')
         ->toContain('->components([')
         ->toContain("TextInput::make('name')->required()")
         ->toContain("Toggle::make('is_active')");
 });
 
-it('inserts fields into configure method with Schema signature', function () {
+it('inserts fields into configure method with Schema signature using $schema variable', function () {
     $content = <<<'PHP'
 <?php
 
@@ -355,6 +356,8 @@ PHP;
     $result = $this->generator->updateFormMethod($content, $fields, $validator);
 
     expect($result)
+        ->toContain('$schema')
+        ->not->toContain('$form->components')
         ->toContain('->components([')
         ->toContain("TextInput::make('name')");
 });

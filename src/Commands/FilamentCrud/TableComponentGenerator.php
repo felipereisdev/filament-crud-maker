@@ -18,7 +18,7 @@ class TableComponentGenerator
                 .'->tooltip(function ($state): ?string {
                            return strlen($state) > 50 ? $state : null;
                          })',
-            'enum' => "TextColumn::make('{$fieldName}')"
+            'select', 'enum' => "TextColumn::make('{$fieldName}')"
                 .'->badge()',
             'boolean', 'checkbox' => "ToggleColumn::make('{$fieldName}')",
             'slider', 'range' => "TextColumn::make('{$fieldName}')"
@@ -47,7 +47,7 @@ class TableComponentGenerator
         };
 
         // Add common properties for columns
-        if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'enum', 'email', 'url'])) {
+        if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'select', 'enum', 'email', 'url'])) {
             $column .= '->searchable()->sortable()';
         } elseif (in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double', 'date', 'datetime', 'time'])) {
             $column .= '->sortable()';

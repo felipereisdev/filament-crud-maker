@@ -55,6 +55,11 @@ it('returns empty array when fields array is empty', function () {
     expect($casts)->toBe([]);
 });
 
+it('builds string cast for enum fields', function () {
+    $casts = $this->manager->buildCastsArray(['status:enum']);
+    expect($casts)->toBe(['status' => 'string']);
+});
+
 it('skips fields without a colon separator', function () {
     $casts = $this->manager->buildCastsArray(['invalid', 'active:boolean']);
     expect($casts)->toBe(['active' => 'boolean']);
@@ -112,7 +117,7 @@ it('generates a morphTo method using the morph name as the method name', functio
     $this->manager->updateModel('Comment', [], ['morphTo:commentable']);
 });
 
-it('generates a morphOne method with the parent-derived morph name', function () {
+it('generates a morphOne method with the related-model-derived morph name', function () {
     $modelContent = <<<'PHP'
         <?php
 
@@ -131,13 +136,13 @@ it('generates a morphOne method with the parent-derived morph name', function ()
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
         return str_contains($content, 'public function image()')
             && str_contains($content, '$this->morphOne(')
-            && str_contains($content, "'postable'");
+            && str_contains($content, "'imageable'");
     });
 
     $this->manager->updateModel('Post', [], ['morphOne:Image']);
 });
 
-it('generates a morphMany method with the parent-derived morph name', function () {
+it('generates a morphMany method with the related-model-derived morph name', function () {
     $modelContent = <<<'PHP'
         <?php
 
@@ -156,10 +161,35 @@ it('generates a morphMany method with the parent-derived morph name', function (
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
         return str_contains($content, 'public function comments()')
             && str_contains($content, '$this->morphMany(')
-            && str_contains($content, "'postable'");
+            && str_contains($content, "'commentable'");
     });
 
     $this->manager->updateModel('Post', [], ['morphMany:Comment']);
+});
+
+it('derives morph name from related model for morphMany (Attachment on Transaction)', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Transaction extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Transaction.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function attachments()')
+            && str_contains($content, '$this->morphMany(')
+            && str_contains($content, "'attachmentable'");
+    });
+
+    $this->manager->updateModel('Transaction', [], ['morphMany:Attachment']);
 });
 
 it('does not duplicate existing fillable entries', function () {

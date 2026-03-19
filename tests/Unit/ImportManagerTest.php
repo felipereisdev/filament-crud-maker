@@ -151,6 +151,46 @@ PHP;
         ->toContain('use Filament\Tables\Filters\TrashedFilter;');
 });
 
+it('injects imports into Filament v5 sub-namespace resource', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources\Products;
+
+use Filament\Resources\Resource;
+
+class ProductResource extends Resource
+{
+}
+PHP;
+
+    $result = $this->manager->addRequiredImports($content, 'Product', ['TextInput'], false);
+
+    // Imports should be injected (namespace matches via sub-namespace regex)
+    expect($result)
+        ->toContain('use Filament\Forms\Components\TextInput;');
+});
+
+it('uses actual sub-namespace for Pages and RelationManagers imports in v5', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources\Categories;
+
+use Filament\Resources\Resource;
+
+class CategoryResource extends Resource
+{
+}
+PHP;
+
+    $result = $this->manager->addRequiredImports($content, 'Category', [], false);
+
+    expect($result)
+        ->toContain('use App\Filament\Resources\Categories\CategoryResource\Pages;')
+        ->toContain('use App\Filament\Resources\Categories\CategoryResource\RelationManagers;');
+});
+
 it('does not add SoftDeletes imports when softDeletes is false', function () {
     $content = <<<'PHP'
 <?php

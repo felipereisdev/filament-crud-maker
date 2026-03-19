@@ -66,36 +66,47 @@ class MigrationManager
                     $typeParams = $matches[2];
                 }
 
-                $fieldDefinition = "\n            \$table->{$mappedType}('{$fieldName}'";
-
-                // Add parameters if any
-                if (! empty($typeParams)) {
-                    $fieldDefinition .= ", {$typeParams}";
-                }
-
-                $fieldDefinition .= ')';
-
-                // Process validations and defaults
+                // Extract modifiers and defaults from extra parts before building the field definition
                 $isNullable = false;
                 $defaultValue = null;
                 $isUnique = false;
+                $maxLength = null;
+                $validationKeywords = ['required', 'email', 'url', 'tel', 'password', 'confirmed'];
 
-                // Check all extra parameters (after the type)
                 for ($i = 2; $i < count($parts); $i++) {
                     $param = $parts[$i];
 
-                    // Identify if it is a validation parameter or default value
                     if ($param === 'nullable') {
                         $isNullable = true;
                     } elseif ($param === 'unique') {
                         $isUnique = true;
-                    } elseif (strpos($param, '=') !== false || strpos($param, 'required') !== false || strpos($param, 'min') !== false || strpos($param, 'max') !== false) {
-                        // Ignore validation parameters
+                    } elseif (preg_match('/^max=(\d+)$/', $param, $maxMatch)) {
+                        // max=N can double as a string column length
+                        $maxLength = $maxMatch[1];
+                    } elseif (strpos($param, '=') !== false || in_array($param, $validationKeywords)) {
+                        // Other validation parameters (min=N, max=N for non-string, required, etc.)
                         continue;
-                    } elseif (is_numeric($param) || in_array($param, ['true', 'false'])) {
-                        $defaultValue = $param;
+                    } elseif ($i === 2) {
+                        // Position 2 is the default value slot
+                        if (is_numeric($param) || in_array($param, ['true', 'false'])) {
+                            $defaultValue = $param;
+                        } else {
+                            // String default value — wrap in quotes
+                            $defaultValue = "'{$param}'";
+                        }
                     }
                 }
+
+                $fieldDefinition = "\n            \$table->{$mappedType}('{$fieldName}'";
+
+                // Add parameters: explicit type params take precedence, then max=N for string columns
+                if (! empty($typeParams)) {
+                    $fieldDefinition .= ", {$typeParams}";
+                } elseif ($mappedType === 'string' && $maxLength !== null) {
+                    $fieldDefinition .= ", {$maxLength}";
+                }
+
+                $fieldDefinition .= ')';
 
                 // Apply nullable if specified
                 if ($isNullable) {
