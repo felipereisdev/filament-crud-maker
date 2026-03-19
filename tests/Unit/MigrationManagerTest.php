@@ -1,0 +1,257 @@
+<?php
+
+use Freis\FilamentCrudGenerator\Commands\FilamentCrud\MigrationManager;
+use Illuminate\Support\Facades\File;
+
+beforeEach(function () {
+    $this->manager = new MigrationManager;
+});
+
+// --- Field type mapping ---
+
+it('maps string field to $table->string()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->string('title')");
+    });
+
+    $this->manager->updateMigration('Post', ['title:string']);
+});
+
+it('maps boolean field to $table->boolean()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->boolean('active')");
+    });
+
+    $this->manager->updateMigration('Post', ['active:boolean']);
+});
+
+it('maps integer field to $table->integer()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->integer('views')");
+    });
+
+    $this->manager->updateMigration('Post', ['views:integer']);
+});
+
+it('maps textarea to $table->text()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->text('body')");
+    });
+
+    $this->manager->updateMigration('Post', ['body:textarea']);
+});
+
+it('maps datetime to $table->dateTime()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->dateTime('published_at')");
+    });
+
+    $this->manager->updateMigration('Post', ['published_at:datetime']);
+});
+
+it('maps richtext to $table->longText()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->longText('content')");
+    });
+
+    $this->manager->updateMigration('Post', ['content:richtext']);
+});
+
+it('maps keyvalue to $table->json()', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->json('metadata')");
+    });
+
+    $this->manager->updateMigration('Post', ['metadata:keyvalue']);
+});
+
+// --- Modifiers ---
+
+it('adds nullable() modifier when field is nullable', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->string('subtitle')->nullable()");
+    });
+
+    $this->manager->updateMigration('Post', ['subtitle:string:nullable']);
+});
+
+it('adds unique() modifier when field is unique', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->string('slug')->unique()");
+    });
+
+    $this->manager->updateMigration('Post', ['slug:string:unique']);
+});
+
+it('adds default value when provided', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->integer('sort_order')->default(0)");
+    });
+
+    $this->manager->updateMigration('Post', ['sort_order:integer:0']);
+});
+
+// --- Relations ---
+
+it('adds foreignId with constrained for belongsTo relations', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->foreignId('user_id')->constrained()->onDelete('cascade')");
+    });
+
+    $this->manager->updateMigration('Post', [], ['belongsTo:User']);
+});
+
+it('adds morphs() column for morphTo relations', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->morphs('commentable')");
+    });
+
+    $this->manager->updateMigration('Post', [], ['morphTo:commentable']);
+});
+
+// --- Soft deletes ---
+
+it('adds softDeletes() column when softDeletes is true', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, '$table->softDeletes()');
+    });
+
+    $this->manager->updateMigration('Post', [], [], true);
+});
+
+it('does not duplicate softDeletes() when already present', function () {
+    $migrationContent = migrationStub(withSoftDeletes: true);
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return substr_count($content, 'softDeletes') === 1;
+    });
+
+    $this->manager->updateMigration('Post', [], [], true);
+});
+
+// --- Pivot tables ---
+
+it('generates pivot table for belongsToMany relation with alphabetical column order', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        // pivot table name must be alphabetically sorted: post_tag (not tag_post)
+        return str_contains($content, "Schema::create('post_tag'")
+            && str_contains($content, "\$table->foreignId('post_id')")
+            && str_contains($content, "\$table->foreignId('tag_id')");
+    });
+
+    $this->manager->updateMigration('Post', [], ['belongsToMany:Tag']);
+});
+
+// --- Error handling ---
+
+it('returns false when migration file is not found', function () {
+    File::shouldReceive('glob')->andReturn([]);
+
+    $result = $this->manager->updateMigration('Post', ['title:string']);
+
+    expect($result)->toBeFalse();
+});
+
+// --- Helpers ---
+
+function migrationStub(bool $withSoftDeletes = false): string
+{
+    $softDeleteLine = $withSoftDeletes ? "\n            \$table->softDeletes();" : '';
+
+    return <<<PHP
+    <?php
+
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
+
+    return new class extends Migration
+    {
+        public function up(): void
+        {
+            Schema::create('posts', function (Blueprint \$table) {
+                \$table->id();{$softDeleteLine}
+                \$table->timestamps();
+            });
+        }
+
+        public function down(): void
+        {
+            Schema::dropIfExists('posts');
+        }
+    };
+    PHP;
+}

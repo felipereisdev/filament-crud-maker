@@ -36,7 +36,7 @@ class MakeFilamentCrud extends Command
      *
      * @var string
      */
-    protected $description = 'Generates a complete CRUD in Filament v4';
+    protected $description = 'Generates a complete CRUD for Filament v4/v5';
 
     /**
      * Execute the console command.
@@ -48,12 +48,20 @@ class MakeFilamentCrud extends Command
             return $this->cleanResources();
         }
 
-        // Check if the model was provided
+        // Check if the model was provided; prompt interactively if missing
         $model = $this->argument('model');
-        if (! is_string($model) || empty($model)) {
-            $this->error('You must provide a model name.');
+        $isInteractive = $this->input->isInteractive() && defined('STDIN') && stream_isatty(STDIN);
 
-            return 1;
+        if (! is_string($model) || empty($model)) {
+            if ($isInteractive) {
+                $model = $this->ask('Model name');
+            }
+
+            if (! is_string($model) || empty($model)) {
+                $this->error('You must provide a model name.');
+
+                return 1;
+            }
         }
 
         $fieldsOption = $this->option('fields');
@@ -61,6 +69,14 @@ class MakeFilamentCrud extends Command
         $fields = is_string($fieldsOption) ? $fieldsOption : '';
         $relations = is_string($relationsOption) ? $relationsOption : '';
         $softDeletes = (bool) $this->option('softDeletes');
+
+        // Interactive wizard when --fields is not provided
+        if (empty($fields) && $isInteractive) {
+            if ($this->confirm('No --fields provided. Use interactive wizard?', true)) {
+                [$fields, $relations, $softDeletes] = $this->runInteractiveWizard();
+            }
+        }
+
         $skipMigrations = (bool) $this->option('no-migrate');
         $skipFormatting = (bool) $this->option('no-format');
 
@@ -110,6 +126,71 @@ class MakeFilamentCrud extends Command
         );
 
         return $result ? 0 : 1;
+    }
+
+    /**
+     * Interactively collects field, relation, and soft-delete configuration from the user.
+     *
+     * @return array{0: string, 1: string, 2: bool}
+     */
+    private function runInteractiveWizard(): array
+    {
+        $fieldTypes = [
+            'string', 'text', 'textarea', 'boolean', 'integer', 'decimal', 'float',
+            'date', 'datetime', 'select', 'foreignId', 'color', 'image', 'file',
+            'richtext', 'markdown', 'json', 'tags', 'keyvalue',
+        ];
+
+        $fieldParts = [];
+        $this->info('--- Field Wizard (leave name empty to finish) ---');
+
+        while (true) {
+            $fieldName = $this->ask('Field name (empty to finish)');
+            if (! is_string($fieldName) || $fieldName === '') {
+                break;
+            }
+
+            $fieldTypeRaw = $this->choice('Field type', $fieldTypes, 0);
+            $fieldType = is_array($fieldTypeRaw) ? implode(',', $fieldTypeRaw) : $fieldTypeRaw;
+            $nullable = $this->confirm('Nullable?', false);
+
+            $fieldDef = $fieldName.':'.$fieldType;
+            if ($nullable) {
+                $fieldDef .= ':nullable';
+            }
+
+            $fieldParts[] = $fieldDef;
+        }
+
+        $relationParts = [];
+        if ($this->confirm('Add relationships?', false)) {
+            $relationTypes = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'morphTo', 'morphOne', 'morphMany'];
+
+            while (true) {
+                $relationTypeRaw = $this->choice('Relation type', $relationTypes, 0);
+                $relationType = is_array($relationTypeRaw) ? implode(',', $relationTypeRaw) : $relationTypeRaw;
+                $prompt = $relationType === 'morphTo' ? 'Morph name (e.g. commentable)' : 'Related model name';
+                $relatedModel = $this->ask($prompt);
+
+                if (! is_string($relatedModel) || $relatedModel === '') {
+                    break;
+                }
+
+                $relationParts[] = $relationType.':'.$relatedModel;
+
+                if (! $this->confirm('Add another relationship?', false)) {
+                    break;
+                }
+            }
+        }
+
+        $softDeletes = $this->confirm('Add soft deletes?', false);
+
+        return [
+            implode(',', $fieldParts),
+            implode(';', $relationParts),
+            $softDeletes,
+        ];
     }
 
     /**

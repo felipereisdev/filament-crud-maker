@@ -2,9 +2,11 @@
 
 namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 
+use Composer\InstalledVersions;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class CrudGenerator
 {
@@ -100,24 +102,42 @@ class CrudGenerator
             }
 
             // Create related models first
-            $this->createRelatedModels($relationArray, $model, $relatedFieldsMap, $softDeletes);
+            $this->createRelatedModels($relationArray, $model, $relatedFieldsMap);
         }
 
         // Check if the model already exists, if not, create it
         $this->modelManager->createIfNotExists($model, $softDeletes);
 
         // Update the migration with the fields
-        $this->migrationManager->updateMigration($model, $fieldArray, $relationArray);
+        $this->migrationManager->updateMigration($model, $fieldArray, $relationArray, $softDeletes);
 
         // Create the Filament resource
         $this->log('Creating Filament resource for '.$model);
-        Artisan::call('make:filament-resource', [
-            'name' => $model,
-            '--generate' => true,
-        ]);
+        $this->callMakeFilamentResource($model);
 
         // Update the model with the required fields
         $this->modelManager->updateModel($model, $fieldArray, $relationArray, $softDeletes);
+
+        // Auto-generate foreignId fields from belongsTo relations so the form includes Select components
+        foreach ($relationArray as $relation) {
+            if (strpos($relation, ':') !== false) {
+                [$relationType, $relatedModel] = explode(':', $relation);
+                if ($relationType === 'belongsTo') {
+                    $foreignKey = Str::snake($relatedModel).'_id';
+                    $alreadyDefined = false;
+                    foreach ($fieldArray as $existingField) {
+                        if (str_starts_with($existingField, $foreignKey.':')) {
+                            $alreadyDefined = true;
+
+                            break;
+                        }
+                    }
+                    if (! $alreadyDefined) {
+                        $fieldArray[] = $foreignKey.':foreignId';
+                    }
+                }
+            }
+        }
 
         // Update the resource with the fields
         $this->resourceUpdater->update($model, $fieldArray, $softDeletes);
@@ -148,7 +168,7 @@ class CrudGenerator
      * @param  array<int, string>  $relationArray
      * @param  array<string, array<int, string>>  $relatedFieldsMap
      */
-    private function createRelatedModels(array $relationArray, string $mainModel, array $relatedFieldsMap, bool $softDeletes): void
+    private function createRelatedModels(array $relationArray, string $mainModel, array $relatedFieldsMap): void
     {
         foreach ($relationArray as $relation) {
             if (strpos($relation, ':') !== false) {
@@ -159,12 +179,17 @@ class CrudGenerator
                     continue;
                 }
 
+                // morphTo carries a morph name, not an actual model class
+                if ($relationType === 'morphTo') {
+                    continue;
+                }
+
                 // Check if the model already exists
-                if (! File::exists(app_path('Models/'.$relatedModel.'.php'))) {
+                if (! File::exists(NamespaceHelper::modelPath($relatedModel))) {
                     $this->log('Creating related model '.$relatedModel);
 
-                    // Create the model
-                    $this->modelManager->createIfNotExists($relatedModel, $softDeletes);
+                    // Related models never inherit soft deletes from the main model
+                    $this->modelManager->createIfNotExists($relatedModel, false);
 
                     // If fields are defined for this model, update it
                     if (isset($relatedFieldsMap[$relatedModel])) {
@@ -173,19 +198,13 @@ class CrudGenerator
                         // Update the migration
                         $this->migrationManager->updateMigration($relatedModel, $fields);
 
-                        // Update the model
-                        $this->modelManager->updateModel($relatedModel, $fields, [], $softDeletes);
+                        // Update the model (no soft deletes for related models)
+                        $this->modelManager->updateModel($relatedModel, $fields, [], false);
                     }
 
                     $this->log('Related model '.$relatedModel.' created successfully!');
                 } else {
                     $this->log('Related model '.$relatedModel.' already exists.');
-
-                    // Add soft deletes if needed
-                    if ($softDeletes) {
-                        // The model already exists, so update it with soft deletes
-                        $this->modelManager->updateModel($relatedModel, [], [], $softDeletes);
-                    }
                 }
             }
         }
@@ -210,16 +229,18 @@ class CrudGenerator
                     continue;
                 }
 
+                // morphTo carries a morph name, not a resource-backed model
+                if ($relationType === 'morphTo') {
+                    continue;
+                }
+
                 $processedModels[] = $relatedModel;
 
                 // Check if the resource already exists
-                if (! File::exists(app_path('Filament/Resources/'.$relatedModel.'Resource.php'))) {
+                if ($this->resourceUpdater->resolveResourcePath($relatedModel) === null) {
                     $this->log('Creating Filament resource for '.$relatedModel);
 
-                    Artisan::call('make:filament-resource', [
-                        'name' => $relatedModel,
-                        '--generate' => true,
-                    ]);
+                    $this->callMakeFilamentResource($relatedModel);
 
                     // Get custom fields for the related model if available
                     $fieldsToUse = isset($relatedFieldsMap[$relatedModel]) ? $relatedFieldsMap[$relatedModel] : [];
@@ -252,7 +273,10 @@ class CrudGenerator
      */
     public function cleanAllResources(): bool
     {
-        $resourceFiles = File::glob(app_path('Filament/Resources/*Resource.php'));
+        $base = NamespaceHelper::resourceBasePath();
+        $v4 = File::glob($base.'/*Resource.php') ?: [];
+        $v5 = File::glob($base.'/*/*Resource.php') ?: [];
+        $resourceFiles = array_merge($v4, $v5);
 
         foreach ($resourceFiles as $file) {
             $modelName = basename($file, 'Resource.php');
@@ -267,6 +291,21 @@ class CrudGenerator
         $this->log('All resources have been cleaned successfully!');
 
         return true;
+    }
+
+    /**
+     * Calls make:filament-resource using the correct argument name for the installed version.
+     * Filament v5 uses `model`, v4 uses `name`.
+     */
+    private function callMakeFilamentResource(string $model): void
+    {
+        $argName = 'name';
+        $version = InstalledVersions::getPrettyVersion('filament/filament');
+        if ($version !== null && version_compare(ltrim($version, 'v'), '5.0.0', '>=')) {
+            $argName = 'model';
+        }
+
+        Artisan::call('make:filament-resource', [$argName => $model, '--generate' => true]);
     }
 
     /**

@@ -16,7 +16,7 @@ class MigrationManager
      * @param  array<int, string>  $fields
      * @param  array<int, string>  $relationArray
      */
-    public function updateMigration(string $model, array $fields, array $relationArray = []): bool
+    public function updateMigration(string $model, array $fields, array $relationArray = [], bool $softDeletes = false): bool
     {
         $migrationFiles = File::glob(database_path('migrations/*_create_'.Str::snake(Str::plural($model)).'_table.php'));
 
@@ -126,12 +126,17 @@ class MigrationManager
                     if ($relationType === 'belongsTo') {
                         $fieldDefinitions .= "\n            \$table->foreignId('".Str::snake($relatedModel)."_id')->constrained()->onDelete('cascade');";
                     }
+
+                    if ($relationType === 'morphTo') {
+                        $morphName = Str::snake($relatedModel);
+                        $fieldDefinitions .= "\n            \$table->morphs('{$morphName}');";
+                    }
                 }
             }
         }
 
         // Add softDeletes if needed
-        if (strpos($content, 'softDeletes') === false && strpos($content, 'SoftDeletes') !== false) {
+        if ($softDeletes && strpos($content, 'softDeletes') === false) {
             $fieldDefinitions .= "\n            \$table->softDeletes();";
         }
 
@@ -223,6 +228,14 @@ class MigrationManager
             'toggleButtons' => 'string',
             'keyvalue' => 'json',
             'checkbox' => 'boolean',
+            'select' => 'string',
+            'enum' => 'string',
+            'textarea' => 'text',
+            'radio' => 'string',
+            'tags' => 'json',
+            'datetime' => 'dateTime',
+            'richtext' => 'longText',
+            'editor' => 'longText',
         ];
 
         return $typeMap[$type] ?? $type;

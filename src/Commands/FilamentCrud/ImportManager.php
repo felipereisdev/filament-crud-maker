@@ -121,11 +121,14 @@ class ImportManager
             $imports[] = 'use Filament\Tables\Filters\TrashedFilter;';
         }
 
+        $resourceNamespace = NamespaceHelper::resourceNamespace();
+        $modelNamespace = NamespaceHelper::modelNamespace();
+
         // Add default imports required for any Filament resource
         $requiredImports = [
-            'use App\Filament\Resources\\'.$model.'Resource\Pages;',
-            'use App\Filament\Resources\\'.$model.'Resource\RelationManagers;',
-            'use App\Models\\'.$model.';',
+            'use '.$resourceNamespace.'\\'.$model.'Resource\\Pages;',
+            'use '.$resourceNamespace.'\\'.$model.'Resource\\RelationManagers;',
+            'use '.$modelNamespace.'\\'.$model.';',
             'use Filament\Resources\Resource;',
             'use Filament\Schemas\Schema;',
             'use Filament\Tables\Table;',
@@ -137,7 +140,7 @@ class ImportManager
         sort($imports); // Sort for readability
 
         // Find the position right after the namespace to add imports
-        $namespacePattern = '/namespace\s+App\\\\Filament\\\\Resources;/';
+        $namespacePattern = '/namespace\s+'.preg_quote($resourceNamespace, '/').';/';
         if (preg_match($namespacePattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
             $namespaceEndPos = $matches[0][1] + strlen($matches[0][0]);
 

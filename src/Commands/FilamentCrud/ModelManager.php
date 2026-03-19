@@ -16,7 +16,7 @@ class ModelManager
      */
     public function createIfNotExists(string $model, bool $softDeletes = false): bool
     {
-        if (! File::exists(app_path('Models/'.$model.'.php'))) {
+        if (! File::exists(NamespaceHelper::modelPath($model))) {
             $this->log('Creating model '.$model);
             $modelCommand = [
                 'name' => $model,
@@ -52,7 +52,7 @@ class ModelManager
      */
     public function updateModel(string $model, array $fields, array $relations, bool $softDeletes = false): bool
     {
-        $modelPath = app_path('Models/'.$model.'.php');
+        $modelPath = NamespaceHelper::modelPath($model);
 
         if (! File::exists($modelPath)) {
             $this->log("Model not found: {$modelPath}", 'error');
@@ -111,29 +111,73 @@ class ModelManager
             }
         }
 
-        // Check if fillable already exists and update it
-        if (preg_match('/protected\s+\$fillable\s*=\s*\[(.*?)\];/s', $content, $matches)) {
-            // Fillable already exists, update it
-            $currentFillable = $matches[1];
-            $fillableString = implode(', ', $fillableFields);
-            $newFillable = "protected \$fillable = [{$fillableString}];";
-            $content = str_replace($matches[0], $newFillable, $content);
-        } else {
-            // Add fillable
-            $fillableString = implode(', ', $fillableFields);
-            $fillableProperty = "\n    protected \$fillable = [{$fillableString}];\n";
+        // Check if fillable already exists and update it, but only if there are fields to set
+        if (! empty($fillableFields)) {
+            if (preg_match('/protected\s+\$fillable\s*=\s*\[(.*?)\];/s', $content, $matches)) {
+                // Fillable already exists — merge to avoid losing existing entries
+                $existingFillable = array_filter(
+                    array_map('trim', explode(',', $matches[1])),
+                    fn (string $item): bool => $item !== ''
+                );
+                $mergedFillable = array_values(array_unique(array_merge($existingFillable, $fillableFields)));
+                $fillableString = implode(', ', $mergedFillable);
+                $newFillable = "protected \$fillable = [{$fillableString}];";
+                $content = str_replace($matches[0], $newFillable, $content);
+            } else {
+                // Add fillable
+                $fillableString = implode(', ', $fillableFields);
+                $fillableProperty = "\n    protected \$fillable = [{$fillableString}];\n";
 
-            // Find a good place to add fillable (after the class declaration)
-            $pattern = '/class\s+'.$model.'\s+extends\s+Model\s*\{[^\}]*?(\n\s*use\s+[^;]+;)?/s';
-            if (preg_match($pattern, $content, $matches)) {
-                $position = strpos($content, $matches[0]) + strlen($matches[0]);
-                $content = substr_replace($content, $fillableProperty, $position, 0);
+                // Find a good place to add fillable (after the class declaration)
+                $pattern = '/class\s+'.$model.'\s+extends\s+Model\s*\{[^\}]*?(\n\s*use\s+[^;]+;)?/s';
+                if (preg_match($pattern, $content, $matches)) {
+                    $position = strpos($content, $matches[0]) + strlen($matches[0]);
+                    $content = substr_replace($content, $fillableProperty, $position, 0);
+                }
+            }
+        }
+
+        // Generate $casts based on field types
+        $castsArray = $this->buildCastsArray($fields);
+
+        if (! empty($castsArray)) {
+            $castsEntries = array_map(
+                fn (string $field, string $cast): string => "'{$field}' => '{$cast}'",
+                array_keys($castsArray),
+                array_values($castsArray)
+            );
+
+            if (preg_match('/protected\s+\$casts\s*=\s*\[(.*?)\];/s', $content, $castsMatches)) {
+                // $casts already exists — merge to avoid losing existing entries
+                $existingEntries = array_filter(
+                    array_map('trim', explode(',', $castsMatches[1])),
+                    fn (string $item): bool => $item !== ''
+                );
+                $mergedCasts = array_values(array_unique(array_merge($existingEntries, $castsEntries)));
+                $castsString = implode(', ', $mergedCasts);
+                $newCasts = "protected \$casts = [{$castsString}];";
+                $content = str_replace($castsMatches[0], $newCasts, $content);
+            } else {
+                // Insert $casts after $fillable if present, otherwise after class declaration
+                $castsString = implode(', ', $castsEntries);
+                $castsProperty = "\n    protected \$casts = [{$castsString}];\n";
+
+                if (preg_match('/protected\s+\$fillable\s*=\s*\[.*?\];/s', $content, $fillableMatch)) {
+                    $fillableEnd = strpos($content, $fillableMatch[0]) + strlen($fillableMatch[0]);
+                    $content = substr_replace($content, $castsProperty, $fillableEnd, 0);
+                } else {
+                    $classPattern = '/class\s+'.$model.'\s+extends\s+Model\s*\{[^\}]*?(\n\s*use\s+[^;]+;)?/s';
+                    if (preg_match($classPattern, $content, $classMatches)) {
+                        $position = strpos($content, $classMatches[0]) + strlen($classMatches[0]);
+                        $content = substr_replace($content, $castsProperty, $position, 0);
+                    }
+                }
             }
         }
 
         // Add relationship methods
         if (! empty($relations)) {
-            $relationMethods = $this->generateRelationMethods($relations);
+            $relationMethods = $this->generateRelationMethods($relations, $model);
 
             // Check if the model already has relationship methods
             if (! empty($relationMethods)) {
@@ -157,7 +201,7 @@ class ModelManager
      */
     private function addSoftDeletesIfNotExists(string $model): void
     {
-        $modelPath = app_path('Models/'.$model.'.php');
+        $modelPath = NamespaceHelper::modelPath($model);
         $content = File::get($modelPath);
 
         $hasSoftDeletes = strpos($content, 'use Illuminate\Database\Eloquent\SoftDeletes;') !== false;
@@ -174,7 +218,7 @@ class ModelManager
      *
      * @param  array<int, string>  $relations
      */
-    private function generateRelationMethods(array $relations): string
+    private function generateRelationMethods(array $relations, string $parentModel = ''): string
     {
         $methods = '';
 
@@ -187,6 +231,9 @@ class ModelManager
                     'hasMany' => $this->generateHasManyMethod($relatedModel),
                     'belongsTo' => $this->generateBelongsToMethod($relatedModel),
                     'belongsToMany' => $this->generateBelongsToManyMethod($relatedModel),
+                    'morphTo' => $this->generateMorphToMethod($relatedModel),
+                    'morphOne' => $this->generateMorphOneMethod($relatedModel, $parentModel),
+                    'morphMany' => $this->generateMorphManyMethod($relatedModel, $parentModel),
                     default => '',
                 };
             }
@@ -198,12 +245,13 @@ class ModelManager
     private function generateHasOneMethod(string $relatedModel): string
     {
         $relationName = Str::camel($relatedModel);
+        $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
 
     public function {$relationName}()
     {
-        return \$this->hasOne(\\App\\Models\\{$relatedModel}::class);
+        return \$this->hasOne(\\{$namespace}\\{$relatedModel}::class);
     }
 PHP;
     }
@@ -211,12 +259,13 @@ PHP;
     private function generateHasManyMethod(string $relatedModel): string
     {
         $relationName = Str::camel(Str::plural($relatedModel));
+        $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
 
     public function {$relationName}()
     {
-        return \$this->hasMany(\\App\\Models\\{$relatedModel}::class);
+        return \$this->hasMany(\\{$namespace}\\{$relatedModel}::class);
     }
 PHP;
     }
@@ -224,12 +273,13 @@ PHP;
     private function generateBelongsToMethod(string $relatedModel): string
     {
         $relationName = Str::camel($relatedModel);
+        $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
 
     public function {$relationName}()
     {
-        return \$this->belongsTo(\\App\\Models\\{$relatedModel}::class);
+        return \$this->belongsTo(\\{$namespace}\\{$relatedModel}::class);
     }
 PHP;
     }
@@ -237,14 +287,111 @@ PHP;
     private function generateBelongsToManyMethod(string $relatedModel): string
     {
         $relationName = Str::camel(Str::plural($relatedModel));
+        $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
 
     public function {$relationName}()
     {
-        return \$this->belongsToMany(\\App\\Models\\{$relatedModel}::class);
+        return \$this->belongsToMany(\\{$namespace}\\{$relatedModel}::class);
     }
 PHP;
+    }
+
+    /**
+     * Generates a morphTo method. The $morphName is the morph relationship name (e.g. "commentable").
+     */
+    private function generateMorphToMethod(string $morphName): string
+    {
+        $relationName = Str::camel($morphName);
+
+        return <<<PHP
+
+    public function {$relationName}()
+    {
+        return \$this->morphTo();
+    }
+PHP;
+    }
+
+    /**
+     * Generates a morphOne method. The morph name is derived from the parent model.
+     */
+    private function generateMorphOneMethod(string $relatedModel, string $parentModel): string
+    {
+        $relationName = Str::camel($relatedModel);
+        $morphName = Str::snake($parentModel).'able';
+        $namespace = NamespaceHelper::modelNamespace();
+
+        return <<<PHP
+
+    public function {$relationName}()
+    {
+        return \$this->morphOne(\\{$namespace}\\{$relatedModel}::class, '{$morphName}');
+    }
+PHP;
+    }
+
+    /**
+     * Generates a morphMany method. The morph name is derived from the parent model.
+     */
+    private function generateMorphManyMethod(string $relatedModel, string $parentModel): string
+    {
+        $relationName = Str::camel(Str::plural($relatedModel));
+        $morphName = Str::snake($parentModel).'able';
+        $namespace = NamespaceHelper::modelNamespace();
+
+        return <<<PHP
+
+    public function {$relationName}()
+    {
+        return \$this->morphMany(\\{$namespace}\\{$relatedModel}::class, '{$morphName}');
+    }
+PHP;
+    }
+
+    /**
+     * Builds the $casts array from field definitions.
+     *
+     * @param  array<int, string>  $fields
+     * @return array<string, string>
+     */
+    public function buildCastsArray(array $fields): array
+    {
+        $casts = [];
+
+        $typeMap = [
+            'boolean' => 'boolean',
+            'checkbox' => 'boolean',
+            'integer' => 'integer',
+            'bigInteger' => 'integer',
+            'slider' => 'integer',
+            'range' => 'integer',
+            'decimal' => 'decimal:2',
+            'float' => 'float',
+            'double' => 'double',
+            'datetime' => 'datetime',
+            'date' => 'date',
+            'json' => 'array',
+            'tags' => 'array',
+            'keyvalue' => 'array',
+        ];
+
+        foreach ($fields as $field) {
+            if (strpos($field, ':') === false) {
+                continue;
+            }
+
+            $parts = explode(':', $field);
+            $fieldName = trim($parts[0]);
+            $fieldType = trim($parts[1]);
+
+            if (isset($typeMap[$fieldType])) {
+                $casts[$fieldName] = $typeMap[$fieldType];
+            }
+        }
+
+        return $casts;
     }
 
     /**

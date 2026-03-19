@@ -11,10 +11,13 @@ A Laravel package that generates **complete CRUD resources** for Filament admin 
 **Key highlights:**
 
 - **One command, full CRUD** — Model, Migration, Resource, Schema, and Table files generated at once
+- **Interactive wizard** — Run the command without `--fields` and be guided step-by-step through field and relationship setup
 - **30+ field types** — From simple text inputs to rich editors, file uploads, color pickers, key-value pairs, and more
 - **Smart component mapping** — Each field type maps to the most appropriate Filament form component, table column, and filter
-- **Relationship support** — `belongsTo`, `belongsToMany`, `hasOne`, and `hasMany` with automatic foreign keys and pivot tables
+- **Relationship support** — `belongsTo`, `belongsToMany`, `hasOne`, `hasMany`, `morphTo`, `morphOne`, and `morphMany`
+- **Soft delete filter** — `TrashedFilter` is automatically added to the table when `--softDeletes` is used
 - **Built-in validation** — Apply rules like `required`, `min`, `max`, `email`, `unique`, `between`, and more directly in the command
+- **Configurable namespaces** — Customize model and resource namespaces via the published config file
 - **Automatic code formatting** — Generated files are formatted with Laravel Pint (PSR-12)
 - **Filament v4/v5 compatible** — Supports both the separate Schemas/Tables directory structure and inline resources
 
@@ -70,6 +73,33 @@ This creates:
 ---
 
 ## Usage
+
+### Interactive Mode
+
+If you omit `--fields`, the command will detect that you are in an interactive terminal and offer a step-by-step wizard:
+
+```bash
+php artisan make:filament-crud Product
+```
+
+```
+No --fields provided. Use interactive wizard? (yes/no) [yes]:
+--- Field Wizard (leave name empty to finish) ---
+Field name (empty to finish): name
+Field type [string]: string
+Nullable? (yes/no) [no]: no
+Field name (empty to finish): price
+Field type [string]: decimal
+Nullable? (yes/no) [no]: no
+Field name (empty to finish):
+Add relationships? (yes/no) [no]: yes
+Relation type [hasOne]: belongsTo
+Related model name: Category
+Add another relationship? (yes/no) [no]: no
+Add soft deletes? (yes/no) [no]: yes
+```
+
+The wizard collects the same information as the CLI flags and assembles it into the standard format. Non-interactive invocations (piped, CI, `--no-interaction`) are unaffected.
 
 ### Command Syntax
 
@@ -245,6 +275,23 @@ You can optionally specify fields for the related model. If the related model do
 | `belongsToMany` | Many-to-many (e.g. Course has many Students) | Creates pivot table with foreign keys and unique constraint |
 | `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model |
 | `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model |
+| `morphTo` | Polymorphic inverse (e.g. Comment belongs to Post or Video) | Adds `$table->morphs('{morphName}')` to migration; the second segment is the morph name |
+| `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method with auto-derived morph name (`{snake(parent)}able`) |
+| `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method with auto-derived morph name (`{snake(parent)}able`) |
+
+**Polymorphic examples:**
+
+```bash
+# Comment model that can belong to Post or Video
+--relations="morphTo:commentable"
+
+# Post model that morphs one Image and many Comments
+--relations="morphOne:Image;morphMany:Comment"
+```
+
+For `morphTo`, the second segment is the **morph name** (e.g. `commentable`), not a model class. The generator adds `$table->morphs('commentable')` to the migration and `$this->morphTo()` to the model.
+
+For `morphOne` and `morphMany`, the second segment is the **related model class**. The morph name is automatically derived as `{snake(parentModel)}able` (e.g. `postable` for model `Post`).
 
 ### Examples
 
@@ -312,9 +359,11 @@ After publishing, the config file is located at `config/filament-crud-maker.php`
 ```php
 return [
     // Namespace where models will be created
+    // All model file paths and import statements are derived from this value
     'model_namespace' => 'App\\Models',
 
     // Namespace where Filament Resources will be created
+    // All resource file paths and import statements are derived from this value
     'resource_namespace' => 'App\\Filament\\Resources',
 
     // Run migrations automatically after generation (override with --no-migrate)
@@ -324,6 +373,8 @@ return [
     'auto_format' => true,
 ];
 ```
+
+Both `model_namespace` and `resource_namespace` are fully respected by the generator — all file path resolution and `use` import statements are derived from these values. If you use a non-standard namespace (e.g. a DDD structure), update these keys and the generator will place and import files correctly.
 
 ## What Gets Generated
 
@@ -352,7 +403,7 @@ For each model, the generator creates or updates:
 
 ### `--softDeletes`
 
-Adds the `SoftDeletes` trait to the model and a `softDeletes()` column to the migration. Also applied to related models created in the same command.
+Adds the `SoftDeletes` trait to the model and a `softDeletes()` column to the migration. The generated table automatically includes a `TrashedFilter` so administrators can view, restore, and permanently delete soft-deleted records from the Filament UI.
 
 ### `--no-migrate`
 

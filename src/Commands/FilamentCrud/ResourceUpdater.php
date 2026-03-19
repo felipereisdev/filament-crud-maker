@@ -4,6 +4,7 @@ namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class ResourceUpdater
 {
@@ -16,16 +17,64 @@ class ResourceUpdater
     ) {}
 
     /**
+     * Resolves the Filament resource file path, supporting both v4 and v5 structures.
+     * Filament v5 uses Resources/{Plurals}/{Model}Resource.php,
+     * v4 uses Resources/{Model}Resource.php.
+     */
+    public function resolveResourcePath(string $model): ?string
+    {
+        $plural = Str::plural($model);
+        $base = NamespaceHelper::resourceBasePath();
+
+        // Filament v5: Resources/Categories/CategoryResource.php
+        $v5 = "{$base}/{$plural}/{$model}Resource.php";
+        if (File::exists($v5)) {
+            return $v5;
+        }
+
+        // Filament v4: Resources/CategoryResource.php
+        $v4 = "{$base}/{$model}Resource.php";
+        if (File::exists($v4)) {
+            return $v4;
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolves the Filament resource directory, supporting both v4 and v5 structures.
+     */
+    public function resolveResourceDir(string $model): ?string
+    {
+        $plural = Str::plural($model);
+        $base = NamespaceHelper::resourceBasePath();
+
+        // Filament v5: Resources/Categories/CategoryResource/
+        $v5 = "{$base}/{$plural}/{$model}Resource";
+        if (File::isDirectory($v5)) {
+            return $v5;
+        }
+
+        // Filament v4: Resources/CategoryResource/
+        $v4 = "{$base}/{$model}Resource";
+        if (File::isDirectory($v4)) {
+            return $v4;
+        }
+
+        return null;
+    }
+
+    /**
      * Updates a Filament resource with fields, columns and filters
      *
      * @param  array<int, string>  $fields
      */
     public function update(string $model, array $fields, bool $softDeletes = false): bool
     {
-        $resourcePath = app_path('Filament/Resources/'.$model.'Resource.php');
+        $resourcePath = $this->resolveResourcePath($model);
 
-        if (! File::exists($resourcePath)) {
-            $this->log("Resource file not found: {$resourcePath}", 'error');
+        if ($resourcePath === null) {
+            $this->log("Resource file not found for model: {$model}", 'error');
 
             return false;
         }
@@ -37,12 +86,18 @@ class ResourceUpdater
         $this->log('Total table columns: '.count($tableColumns));
         $this->log('Total filters: '.count($filterFields));
 
-        // Detect v4 directory structure (Schemas/ + Tables/)
-        $resourceDir = app_path('Filament/Resources/'.$model.'Resource');
-        $schemaPath = $resourceDir.'/Schemas/'.$model.'Form.php';
-        $tablePath = $resourceDir.'/Tables/'.$model.'sTable.php';
+        // Detect Schemas/Tables directory structure
+        $resourceDir = $this->resolveResourceDir($model);
+        $schemaPath = $resourceDir !== null ? $resourceDir.'/Schemas/'.$model.'Form.php' : null;
+        $tablePath = $resourceDir !== null ? $resourceDir.'/Tables/'.$model.'sTable.php' : null;
 
-        if (File::isDirectory($resourceDir.'/Schemas') && File::isDirectory($resourceDir.'/Tables')) {
+        if (
+            $resourceDir !== null
+            && $schemaPath !== null
+            && $tablePath !== null
+            && File::isDirectory($resourceDir.'/Schemas')
+            && File::isDirectory($resourceDir.'/Tables')
+        ) {
             $this->log('Separate Schemas/Tables structure detected');
 
             return $this->updateV4Structure(
@@ -93,10 +148,12 @@ class ResourceUpdater
             $validationRules = [];
             $defaultValue = null;
 
+            $validationKeywords = ['required', 'nullable', 'unique', 'email', 'url', 'tel', 'password', 'confirmed'];
+
             for ($i = 2; $i < count($parts); $i++) {
                 $part = trim($parts[$i]);
 
-                if ($i == 2 && ! preg_match('/[=]/', $part)) {
+                if ($i == 2 && ! preg_match('/[=]/', $part) && ! in_array($part, $validationKeywords)) {
                     $defaultValue = $part;
 
                     continue;
@@ -175,6 +232,11 @@ class ResourceUpdater
             }
         }
 
+        // Prepend TrashedFilter so soft-deleted records are filterable
+        if ($softDeletes) {
+            array_unshift($filterFields, 'TrashedFilter::make()');
+        }
+
         // Update Table file (columns, filters, actions)
         if ((! empty($tableColumns) || ! empty($filterFields)) && File::exists($tablePath)) {
             if (! $this->updateTableFile($model, $tablePath, $tableColumns, $filterFields, $tableComponents, $softDeletes)) {
@@ -199,9 +261,11 @@ class ResourceUpdater
         $content = $this->formGenerator->updateFormMethod($content, $formFields, $this->codeValidator);
         $content = $this->importManager->addFormFileImports($content, array_unique($formComponents));
 
-        $tempFile = storage_path('app/debug_schema_'.$model.'.php');
-        File::put($tempFile, $content);
-        $this->log("Debug version of Schema saved at: {$tempFile}");
+        if ($this->isVerbose()) {
+            $tempFile = storage_path('app/debug_schema_'.$model.'.php');
+            File::put($tempFile, $content);
+            $this->log("Debug version of Schema saved at: {$tempFile}");
+        }
 
         if (! $this->codeValidator->validateSyntax($content)) {
             $this->log('Syntax error in generated Schema code.', 'error');
@@ -236,9 +300,11 @@ class ResourceUpdater
         $content = $this->tableGenerator->updateTableMethod($content, $tableColumns, $filterFields, $this->codeValidator);
         $content = $this->importManager->addTableFileImports($content, array_unique($tableComponents), $softDeletes);
 
-        $tempFile = storage_path('app/debug_table_'.$model.'.php');
-        File::put($tempFile, $content);
-        $this->log("Debug version of Table saved at: {$tempFile}");
+        if ($this->isVerbose()) {
+            $tempFile = storage_path('app/debug_table_'.$model.'.php');
+            File::put($tempFile, $content);
+            $this->log("Debug version of Table saved at: {$tempFile}");
+        }
 
         if (! $this->codeValidator->validateSyntax($content)) {
             $this->log('Syntax error in generated Table code.', 'error');
@@ -276,15 +342,22 @@ class ResourceUpdater
             $content = $this->formGenerator->updateFormMethod($content, $formFields, $this->codeValidator);
         }
 
+        // Prepend TrashedFilter so soft-deleted records are filterable
+        if ($softDeletes) {
+            array_unshift($filterFields, 'TrashedFilter::make()');
+        }
+
         if (! empty($tableColumns) || ! empty($filterFields)) {
             $content = $this->tableGenerator->updateTableMethod($content, $tableColumns, $filterFields, $this->codeValidator);
         }
 
         $content = $this->importManager->addRequiredImports($content, $model, $usedComponents, $softDeletes);
 
-        $tempFile = storage_path('app/debug_resource_'.$model.'.php');
-        File::put($tempFile, $content);
-        $this->log("Debug version saved at: {$tempFile}");
+        if ($this->isVerbose()) {
+            $tempFile = storage_path('app/debug_resource_'.$model.'.php');
+            File::put($tempFile, $content);
+            $this->log("Debug version saved at: {$tempFile}");
+        }
 
         if (! $this->codeValidator->validateSyntax($content)) {
             $this->log('Syntax error in generated code. Checking for issues...', 'error');
@@ -296,6 +369,14 @@ class ResourceUpdater
         $this->log("Resource {$model} updated successfully!");
 
         return true;
+    }
+
+    /**
+     * Checks if the command is running in verbose mode
+     */
+    private function isVerbose(): bool
+    {
+        return $this->command !== null && $this->command->getOutput()->isVerbose();
     }
 
     /**
