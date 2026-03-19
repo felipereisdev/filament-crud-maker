@@ -182,6 +182,18 @@ it('generates ToggleColumn for checkbox type', function () {
     expect($result)->toContain("ToggleColumn::make('agreed')");
 });
 
+// --- belongsToMany ---
+
+it('returns empty string for belongsToMany column', function () {
+    $result = $this->generator->generateColumn('tags', 'belongsToMany');
+    expect($result)->toBe('');
+});
+
+it('returns null for belongsToMany filter', function () {
+    $result = $this->generator->generateFilter('tags', 'belongsToMany');
+    expect($result)->toBeNull();
+});
+
 // --- ForeignId relationship column ---
 
 it('generates relation.name TextColumn for foreignId type', function () {
@@ -260,14 +272,23 @@ it('generates SelectFilter with relationship for foreignId type', function () {
         ->toContain("->relationship('user', 'name')");
 });
 
-it('generates SelectFilter for enum type', function () {
-    $result = $this->generator->generateFilter('status', 'enum');
-    expect($result)->toContain("SelectFilter::make('status')");
+it('generates SelectFilter without options for foreignId type', function () {
+    $result = $this->generator->generateFilter('user_id', 'foreignId');
+    expect($result)->not->toContain('->options(');
 });
 
-it('generates SelectFilter for select type', function () {
+it('generates SelectFilter with options for enum type', function () {
+    $result = $this->generator->generateFilter('status', 'enum');
+    expect($result)
+        ->toContain("SelectFilter::make('status')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
+});
+
+it('generates SelectFilter with options for select type', function () {
     $result = $this->generator->generateFilter('category', 'select');
-    expect($result)->toContain("SelectFilter::make('category')");
+    expect($result)
+        ->toContain("SelectFilter::make('category')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
 });
 
 it('generates date range Filter for date type', function () {
@@ -305,19 +326,25 @@ it('generates numeric range Filter for integer type', function () {
 
 // --- Text fields only generate filter for status/type/category ---
 
-it('generates SelectFilter for string field named status', function () {
+it('generates SelectFilter with options for string field named status', function () {
     $result = $this->generator->generateFilter('status', 'string');
-    expect($result)->toContain("SelectFilter::make('status')");
+    expect($result)
+        ->toContain("SelectFilter::make('status')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
 });
 
-it('generates SelectFilter for string field named type', function () {
+it('generates SelectFilter with options for string field named type', function () {
     $result = $this->generator->generateFilter('type', 'string');
-    expect($result)->toContain("SelectFilter::make('type')");
+    expect($result)
+        ->toContain("SelectFilter::make('type')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
 });
 
-it('generates SelectFilter for string field named category', function () {
+it('generates SelectFilter with options for string field named category', function () {
     $result = $this->generator->generateFilter('category', 'string');
-    expect($result)->toContain("SelectFilter::make('category')");
+    expect($result)
+        ->toContain("SelectFilter::make('category')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
 });
 
 it('returns null for regular string field filter', function () {
@@ -340,9 +367,11 @@ it('generates TernaryFilter for checkbox type', function () {
     expect($result)->toContain("TernaryFilter::make('agreed')");
 });
 
-it('generates SelectFilter for toggleButtons type', function () {
+it('generates SelectFilter with options for toggleButtons type', function () {
     $result = $this->generator->generateFilter('status', 'toggleButtons');
-    expect($result)->toContain("SelectFilter::make('status')");
+    expect($result)
+        ->toContain("SelectFilter::make('status')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
 });
 
 it('generates numeric range Filter for slider type', function () {
@@ -395,6 +424,7 @@ it('returns correct column component type', function (string $fieldType, string 
     ['slider', 'TextColumn'],
     ['range', 'TextColumn'],
     ['toggleButtons', 'TextColumn'],
+    ['belongsToMany', ''],
 ]);
 
 it('does not return BadgeColumn for any field type', function () {
@@ -421,6 +451,7 @@ it('returns correct filter component type', function (string $fieldType, string 
     ['range', 'Filter'],
     ['checkbox', 'TernaryFilter'],
     ['toggleButtons', 'SelectFilter'],
+    ['belongsToMany', ''],
     ['code', ''],
     ['json', ''],
     ['keyvalue', ''],

@@ -11,6 +11,10 @@ class TableComponentGenerator
      */
     public function generateColumn(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
+        if ($fieldType === 'belongsToMany') {
+            return '';
+        }
+
         $column = match ($fieldType) {
             'string', 'text' => "TextColumn::make('{$fieldName}')",
             'textarea', 'longtext', 'markdown', 'richtext', 'editor', 'code', 'json', 'keyvalue' => "TextColumn::make('{$fieldName}')"
@@ -65,10 +69,11 @@ class TableComponentGenerator
     {
         $filter = match ($fieldType) {
             'boolean', 'checkbox' => "TernaryFilter::make('{$fieldName}')",
-            'toggleButtons' => "SelectFilter::make('{$fieldName}')",
+            'toggleButtons' => "SelectFilter::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
             'foreignId' => "SelectFilter::make('{$fieldName}')"
                 ."->relationship('".str_replace('_id', '', $fieldName)."', 'name')",
-            'select', 'enum' => "SelectFilter::make('{$fieldName}')",
+            'select', 'enum' => "SelectFilter::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
+            'belongsToMany' => null,
             'date', 'datetime' => "Filter::make('{$fieldName}')"
                 .'->form(['
                 ."DatePicker::make('{$fieldName}_from')"
@@ -109,7 +114,7 @@ class TableComponentGenerator
                         })",
             'string', 'text', 'textarea', 'longtext' => (
                 str_contains($fieldName, 'status') || str_contains($fieldName, 'type') || str_contains($fieldName, 'tipo') || str_contains($fieldName, 'category') || str_contains($fieldName, 'categoria')
-                    ? "SelectFilter::make('{$fieldName}')"
+                    ? "SelectFilter::make('{$fieldName}')->options([ /* TODO: add your options here */ ])"
                     : null
             ),
             default => null,
@@ -131,6 +136,7 @@ class TableComponentGenerator
                 'icon' => 'IconColumn',
                 'enum', 'tags', 'toggleButtons' => 'TextColumn',
                 'code', 'json', 'keyvalue', 'slider', 'range' => 'TextColumn',
+                'belongsToMany' => '',
                 default => 'TextColumn',
             };
         } elseif ($context === 'filter') {
@@ -138,6 +144,7 @@ class TableComponentGenerator
                 'boolean', 'checkbox' => 'TernaryFilter',
                 'select', 'enum', 'foreignId', 'status', 'type', 'category', 'toggleButtons' => 'SelectFilter',
                 'date', 'datetime', 'time', 'decimal', 'float', 'double', 'integer', 'bigInteger', 'slider', 'range' => 'Filter',
+                'belongsToMany' => '',
                 default => '',
             };
         }

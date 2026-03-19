@@ -2,6 +2,7 @@
 
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\MigrationManager;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
     $this->manager = new MigrationManager;
@@ -284,6 +285,79 @@ it('maps float field to $table->float() with explicit precision', function () {
     });
 
     $this->manager->updateMigration('Post', ['weight:float']);
+});
+
+// --- shouldUseAlterMigration ---
+
+it('shouldUseAlterMigration returns true when table exists in DB', function () {
+    Schema::shouldReceive('hasTable')->with('transactions')->andReturn(true);
+
+    expect($this->manager->shouldUseAlterMigration('Transaction'))->toBeTrue();
+});
+
+it('shouldUseAlterMigration returns true when migration file not found', function () {
+    Schema::shouldReceive('hasTable')->with('transactions')->andReturn(false);
+    File::shouldReceive('glob')->andReturn([]);
+
+    expect($this->manager->shouldUseAlterMigration('Transaction'))->toBeTrue();
+});
+
+it('shouldUseAlterMigration returns true when migration has custom fields', function () {
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_transactions_table.php');
+    $content = <<<'PHP'
+    <?php
+    return new class extends Migration {
+        public function up(): void {
+            Schema::create('transactions', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->timestamps();
+            });
+        }
+    };
+    PHP;
+
+    Schema::shouldReceive('hasTable')->with('transactions')->andReturn(false);
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($content);
+
+    expect($this->manager->shouldUseAlterMigration('Transaction'))->toBeTrue();
+});
+
+it('shouldUseAlterMigration returns false for bare scaffold migration', function () {
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_transactions_table.php');
+    $content = <<<'PHP'
+    <?php
+    return new class extends Migration {
+        public function up(): void {
+            Schema::create('transactions', function (Blueprint $table) {
+                $table->id();
+                $table->timestamps();
+            });
+        }
+    };
+    PHP;
+
+    Schema::shouldReceive('hasTable')->with('transactions')->andReturn(false);
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($content);
+
+    expect($this->manager->shouldUseAlterMigration('Transaction'))->toBeFalse();
+});
+
+// --- createAlterMigration ---
+
+it('createAlterMigration generates correct file content', function () {
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($path, '_add_budget_id_to_transactions_table.php')
+            && str_contains($content, "Schema::table('transactions'")
+            && str_contains($content, "\$table->foreignId('budget_id')->constrained()->onDelete('cascade')")
+            && str_contains($content, "\$table->dropForeign(['budget_id'])")
+            && str_contains($content, "\$table->dropColumn('budget_id')");
+    });
+
+    $result = $this->manager->createAlterMigration('Transaction', 'Budget');
+    expect($result)->toBeTrue();
 });
 
 // --- Error handling ---

@@ -18,13 +18,14 @@ class FormComponentGenerator
             'date' => "DatePicker::make('{$fieldName}')",
             'datetime' => "DateTimePicker::make('{$fieldName}')",
             'time' => "TimePicker::make('{$fieldName}')",
-            'select', 'enum' => "Select::make('{$fieldName}')->options([])",
+            'select', 'enum' => "Select::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
             'foreignId' => "Select::make('{$fieldName}')"
                 .(str_replace('_id', '', $fieldName) !== $fieldName
                     ? "->relationship('".str_replace('_id', '', $fieldName)."', 'name')"
                     : ''),
-            'checkboxes' => "CheckboxList::make('{$fieldName}')->options([])",
-            'radio' => "Radio::make('{$fieldName}')->options([])",
+            'belongsToMany' => "Select::make('{$fieldName}')->multiple()->relationship('{$fieldName}', 'name')",
+            'checkboxes' => "CheckboxList::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
+            'radio' => "Radio::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
             'color' => "ColorPicker::make('{$fieldName}')",
             'file' => "FileUpload::make('{$fieldName}')"
                 ."->disk('public')"
@@ -40,7 +41,7 @@ class FormComponentGenerator
             'tags' => "TagsInput::make('{$fieldName}')",
             'code', 'json' => "CodeEditor::make('{$fieldName}')",
             'slider', 'range' => "Slider::make('{$fieldName}')",
-            'toggleButtons' => "ToggleButtons::make('{$fieldName}')->options([])",
+            'toggleButtons' => "ToggleButtons::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
             'keyvalue' => "KeyValue::make('{$fieldName}')",
             'checkbox' => "Checkbox::make('{$fieldName}')",
             'decimal', 'float', 'double' => "TextInput::make('{$fieldName}')"
@@ -109,7 +110,7 @@ class FormComponentGenerator
             'date' => 'DatePicker',
             'datetime' => 'DateTimePicker',
             'time' => 'TimePicker',
-            'select', 'enum', 'foreignId' => 'Select',
+            'select', 'enum', 'foreignId', 'belongsToMany' => 'Select',
             'checkboxes' => 'CheckboxList',
             'radio' => 'Radio',
             'color' => 'ColorPicker',

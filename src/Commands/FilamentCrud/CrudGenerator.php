@@ -134,7 +134,11 @@ class CrudGenerator
             if (strpos($relation, ':') !== false) {
                 [$relationType, $relatedModel] = explode(':', $relation);
                 if (in_array($relationType, ['hasMany', 'hasOne'])) {
-                    $this->migrationManager->updateMigration($relatedModel, [], ['belongsTo:'.$model]);
+                    if ($this->migrationManager->shouldUseAlterMigration($relatedModel)) {
+                        $this->migrationManager->createAlterMigration($relatedModel, $model);
+                    } else {
+                        $this->migrationManager->updateMigration($relatedModel, [], ['belongsTo:'.$model]);
+                    }
                 }
             }
         }
@@ -173,6 +177,17 @@ class CrudGenerator
                     if (! $alreadyDefined) {
                         $fieldArray[] = $foreignKey.':foreignId';
                     }
+                }
+            }
+        }
+
+        // Auto-generate belongsToMany pseudo-fields so the form includes multi-Select components
+        foreach ($relationArray as $relation) {
+            if (strpos($relation, ':') !== false) {
+                [$relationType, $relatedModel] = explode(':', $relation);
+                if ($relationType === 'belongsToMany') {
+                    $pluralRelation = Str::camel(Str::plural($relatedModel));
+                    $fieldArray[] = $pluralRelation.':belongsToMany';
                 }
             }
         }

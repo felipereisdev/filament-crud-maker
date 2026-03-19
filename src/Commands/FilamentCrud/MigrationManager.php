@@ -4,6 +4,7 @@ namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class MigrationManager
@@ -219,6 +220,84 @@ class MigrationManager
         File::put($migrationFile, $newContent);
 
         $this->log('Migration updated successfully.');
+
+        return true;
+    }
+
+    /**
+     * Determines whether an alter migration should be used instead of inlining FK into the create migration.
+     * Returns true when the table already exists in the DB, when no create migration file is found,
+     * or when the create migration has custom fields beyond id/timestamps/softDeletes.
+     */
+    public function shouldUseAlterMigration(string $model): bool
+    {
+        $tableName = Str::snake(Str::plural($model));
+
+        // If the table already exists in the database, must use alter migration
+        if (Schema::hasTable($tableName)) {
+            return true;
+        }
+
+        // If there is no create migration file, use alter migration
+        $migrationFiles = File::glob(database_path('migrations/*_create_'.$tableName.'_table.php'));
+        if (empty($migrationFiles)) {
+            return true;
+        }
+
+        // Read the migration content and check if it has custom fields
+        $content = File::get($migrationFiles[0]);
+
+        // Remove id(), timestamps(), and softDeletes() calls, then check if any $table-> calls remain
+        $cleaned = preg_replace('/\$table->(id|timestamps|softDeletes)\(\)\s*;/', '', $content) ?? $content;
+
+        // If there are remaining $table-> calls, the migration has custom fields (FK ordering risk)
+        if (preg_match('/\$table->(?!id\b|timestamps\b|softDeletes\b)\w+/', $cleaned)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Creates a separate alter migration to add a FK column to an existing table.
+     * This avoids FK ordering issues when the referenced table's migration runs after the target table.
+     */
+    public function createAlterMigration(string $model, string $foreignModel): bool
+    {
+        $tableName = Str::snake(Str::plural($model));
+        $fkColumn = Str::snake($foreignModel).'_id';
+        $fileName = date('Y_m_d_His').'_add_'.$fkColumn.'_to_'.$tableName.'_table.php';
+        $filePath = database_path('migrations/'.$fileName);
+
+        $content = <<<PHP
+        <?php
+
+        use Illuminate\Database\Migrations\Migration;
+        use Illuminate\Database\Schema\Blueprint;
+        use Illuminate\Support\Facades\Schema;
+
+        return new class extends Migration
+        {
+            public function up(): void
+            {
+                Schema::table('{$tableName}', function (Blueprint \$table) {
+                    \$table->foreignId('{$fkColumn}')->constrained()->onDelete('cascade');
+                });
+            }
+
+            public function down(): void
+            {
+                Schema::table('{$tableName}', function (Blueprint \$table) {
+                    \$table->dropForeign(['{$fkColumn}']);
+                    \$table->dropColumn('{$fkColumn}');
+                });
+            }
+        };
+        PHP;
+
+        File::put($filePath, $content);
+
+        $this->log("Alter migration created: {$fileName}");
 
         return true;
     }
