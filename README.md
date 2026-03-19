@@ -4,7 +4,7 @@
 [![Laravel 11/12/13](https://img.shields.io/badge/Laravel-11%20%7C%2012%20%7C%2013-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
 [![Filament v4/v5](https://img.shields.io/badge/Filament-v4%20%7C%20v5-FFAA00?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTEyIDJMMiAyMmgyMEwxMiAyeiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=)](https://filamentphp.com)
 [![PHPStan Level 9](https://img.shields.io/badge/PHPStan-Level%209-4695D4)](https://phpstan.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20+%20Commons%20Clause-blue.svg)](LICENSE.md)
 
 A Laravel package that generates **complete CRUD resources** for Filament admin panels with a single Artisan command. Define your fields, relationships, and validations — the generator creates your Model, Migration, and fully configured Filament Resource with smart form components, table columns, filters, and actions.
 

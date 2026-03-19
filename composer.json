@@ -2,7 +2,7 @@
     "name": "felipereisdev/filament-crud-maker",
     "description": "CRUD generator for Filament v4/v5 admin panels",
     "type": "library",
-    "license": "MIT",
+    "license": "MIT AND Commons-Clause",
     "autoload": {
         "psr-4": {
             "Freis\\FilamentCrudGenerator\\": "src/"
