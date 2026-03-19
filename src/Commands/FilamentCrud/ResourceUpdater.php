@@ -49,10 +49,20 @@ class ResourceUpdater
         $plural = Str::plural($model);
         $base = NamespaceHelper::resourceBasePath();
 
-        // Filament v5: Resources/Categories/CategoryResource/
-        $v5 = "{$base}/{$plural}/{$model}Resource";
-        if (File::isDirectory($v5)) {
-            return $v5;
+        // Filament v5 Mode B: Resources/Categories/CategoryResource/
+        $v5ModeB = "{$base}/{$plural}/{$model}Resource";
+        if (File::isDirectory($v5ModeB)) {
+            return $v5ModeB;
+        }
+
+        // Filament v5 Mode A (default): Resources/Categories/ contains Schemas/Tables/Pages directly
+        $v5ModeA = "{$base}/{$plural}";
+        if (File::isDirectory($v5ModeA) && (
+            File::isDirectory("{$v5ModeA}/Schemas") ||
+            File::isDirectory("{$v5ModeA}/Tables") ||
+            File::isDirectory("{$v5ModeA}/Pages")
+        )) {
+            return $v5ModeA;
         }
 
         // Filament v4: Resources/CategoryResource/

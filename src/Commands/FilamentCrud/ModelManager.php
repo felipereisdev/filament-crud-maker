@@ -242,7 +242,10 @@ class ModelManager
 
         foreach ($relations as $relation) {
             if (strpos($relation, ':') !== false) {
-                [$relationType, $relatedModel] = explode(':', $relation);
+                $parts = explode(':', $relation);
+                $relationType = $parts[0];
+                $relatedModel = $parts[1];
+                $morphName = $parts[2] ?? null;
 
                 $methods .= match ($relationType) {
                     'hasOne' => $this->generateHasOneMethod($relatedModel),
@@ -250,8 +253,8 @@ class ModelManager
                     'belongsTo' => $this->generateBelongsToMethod($relatedModel),
                     'belongsToMany' => $this->generateBelongsToManyMethod($relatedModel),
                     'morphTo' => $this->generateMorphToMethod($relatedModel),
-                    'morphOne' => $this->generateMorphOneMethod($relatedModel, $parentModel),
-                    'morphMany' => $this->generateMorphManyMethod($relatedModel, $parentModel),
+                    'morphOne' => $this->generateMorphOneMethod($relatedModel, $parentModel, $morphName),
+                    'morphMany' => $this->generateMorphManyMethod($relatedModel, $parentModel, $morphName),
                     default => '',
                 };
             }
@@ -333,12 +336,12 @@ PHP;
     }
 
     /**
-     * Generates a morphOne method. The morph name is derived from the related model.
+     * Generates a morphOne method. The morph name can be explicitly provided or derived from the related model.
      */
-    private function generateMorphOneMethod(string $relatedModel, string $parentModel): string
+    private function generateMorphOneMethod(string $relatedModel, string $parentModel, ?string $morphName = null): string
     {
         $relationName = Str::camel($relatedModel);
-        $morphName = Str::snake($relatedModel).'able';
+        $morphName = $morphName ?? Str::snake($relatedModel).'able';
         $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP
@@ -351,12 +354,12 @@ PHP;
     }
 
     /**
-     * Generates a morphMany method. The morph name is derived from the related model.
+     * Generates a morphMany method. The morph name can be explicitly provided or derived from the related model.
      */
-    private function generateMorphManyMethod(string $relatedModel, string $parentModel): string
+    private function generateMorphManyMethod(string $relatedModel, string $parentModel, ?string $morphName = null): string
     {
         $relationName = Str::camel(Str::plural($relatedModel));
-        $morphName = Str::snake($relatedModel).'able';
+        $morphName = $morphName ?? Str::snake($relatedModel).'able';
         $namespace = NamespaceHelper::modelNamespace();
 
         return <<<PHP

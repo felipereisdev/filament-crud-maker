@@ -271,6 +271,21 @@ it('maps decimal field to $table->decimal() with explicit precision', function (
     $this->manager->updateMigration('Post', ['amount:decimal']);
 });
 
+// --- Float precision ---
+
+it('maps float field to $table->float() with explicit precision', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->float('weight', 8, 2)");
+    });
+
+    $this->manager->updateMigration('Post', ['weight:float']);
+});
+
 // --- Error handling ---
 
 it('returns false when migration file is not found', function () {

@@ -192,6 +192,56 @@ it('derives morph name from related model for morphMany (Attachment on Transacti
     $this->manager->updateModel('Transaction', [], ['morphMany:Attachment']);
 });
 
+it('generates morphMany method with explicit morph name', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Transaction extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Transaction.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function attachments(): \Illuminate\Database\Eloquent\Relations\MorphMany')
+            && str_contains($content, '$this->morphMany(')
+            && str_contains($content, "'attachable'");
+    });
+
+    $this->manager->updateModel('Transaction', [], ['morphMany:Attachment:attachable']);
+});
+
+it('generates morphOne method with explicit morph name', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Post extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Post.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function attachment(): \Illuminate\Database\Eloquent\Relations\MorphOne')
+            && str_contains($content, '$this->morphOne(')
+            && str_contains($content, "'attachable'");
+    });
+
+    $this->manager->updateModel('Post', [], ['morphOne:Attachment:attachable']);
+});
+
 it('generates hasMany method with return type hint', function () {
     $modelContent = <<<'PHP'
         <?php

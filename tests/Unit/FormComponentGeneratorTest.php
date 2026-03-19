@@ -49,14 +49,14 @@ it('generates TimePicker for time type', function () {
     expect($result)->toBe("TimePicker::make('start_time')");
 });
 
-it('generates Select for select type', function () {
+it('generates Select with options for select type', function () {
     $result = $this->generator->generate('status', 'select');
-    expect($result)->toBe("Select::make('status')");
+    expect($result)->toBe("Select::make('status')->options([])");
 });
 
-it('generates Select for enum type', function () {
+it('generates Select with options for enum type', function () {
     $result = $this->generator->generate('role', 'enum');
-    expect($result)->toBe("Select::make('role')");
+    expect($result)->toBe("Select::make('role')->options([])");
 });
 
 it('generates Select with relationship for foreignId type', function () {
@@ -64,14 +64,14 @@ it('generates Select with relationship for foreignId type', function () {
     expect($result)->toBe("Select::make('category_id')->relationship('category', 'name')");
 });
 
-it('generates CheckboxList for checkboxes type', function () {
+it('generates CheckboxList with options for checkboxes type', function () {
     $result = $this->generator->generate('permissions', 'checkboxes');
-    expect($result)->toBe("CheckboxList::make('permissions')");
+    expect($result)->toBe("CheckboxList::make('permissions')->options([])");
 });
 
-it('generates Radio for radio type', function () {
+it('generates Radio with options for radio type', function () {
     $result = $this->generator->generate('gender', 'radio');
-    expect($result)->toBe("Radio::make('gender')");
+    expect($result)->toBe("Radio::make('gender')->options([])");
 });
 
 it('generates ColorPicker for color type', function () {
@@ -159,9 +159,9 @@ it('generates Slider for range type', function () {
     expect($result)->toBe("Slider::make('age_range')");
 });
 
-it('generates ToggleButtons for toggleButtons type', function () {
+it('generates ToggleButtons with options for toggleButtons type', function () {
     $result = $this->generator->generate('status', 'toggleButtons');
-    expect($result)->toBe("ToggleButtons::make('status')");
+    expect($result)->toBe("ToggleButtons::make('status')->options([])");
 });
 
 it('generates KeyValue for keyvalue type', function () {

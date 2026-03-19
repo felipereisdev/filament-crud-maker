@@ -19,7 +19,7 @@ A Laravel package that generates **complete CRUD resources** for Filament admin 
 - **Built-in validation** — Apply rules like `required`, `min`, `max`, `email`, `unique`, `between`, and more directly in the command
 - **Configurable namespaces** — Customize model and resource namespaces via the published config file
 - **Automatic code formatting** — Generated files are formatted with Laravel Pint (PSR-12)
-- **Filament v4/v5 compatible** — Supports both `form(Form $form)` and `form(Schema $schema)` signatures, separate Schemas/Tables directory structure, and inline resources. Schema and Table files are detected independently
+- **Filament v4/v5 compatible** — Supports both `form(Form $form)` and `form(Schema $schema)` signatures, separate Schemas/Tables directory structure (both Mode A and Mode B), and inline resources. Schema and Table files are detected independently
 
 ---
 
@@ -177,7 +177,7 @@ name:string:required:max=100
 | `integer` | `TextInput` (numeric, step 1) | `TextColumn` (numeric) | `integer` |
 | `bigInteger` | `TextInput` (numeric, step 1) | `TextColumn` (numeric) | `bigInteger` |
 | `decimal` | `TextInput` (numeric, decimal) | `TextColumn` (numeric/money*) | `decimal(10, 2)` |
-| `float` | `TextInput` (numeric, decimal) | `TextColumn` (numeric) | `float` |
+| `float` | `TextInput` (numeric, decimal) | `TextColumn` (numeric) | `float(8, 2)` |
 | `double` | `TextInput` (numeric, decimal) | `TextColumn` (numeric) | `double` |
 
 > \* Fields named `price`, `preco`, or `valor` automatically use `->money('BRL')` formatting.
@@ -201,12 +201,12 @@ name:string:required:max=100
 
 | Type | Form Component | Table Column | Migration Type |
 |---|---|---|---|
-| `select` | `Select` | `TextColumn` (badge, searchable, sortable) | `string` |
-| `enum` | `Select` | `TextColumn` (badge) | `string` |
-| `foreignId` | `Select` (with relationship) | `TextColumn` (relationship) | `foreignId` |
-| `checkboxes` | `CheckboxList` | `TextColumn` | `json` |
-| `radio` | `Radio` | `TextColumn` | `string` |
-| `toggleButtons` | `ToggleButtons` | `TextColumn` (badge) | `string` |
+| `select` | `Select` (with `->options([])`) | `TextColumn` (badge, searchable, sortable) | `string` |
+| `enum` | `Select` (with `->options([])`) | `TextColumn` (badge) | `string` |
+| `foreignId` | `Select` (with `->relationship()`) | `TextColumn` (relationship) | `foreignId` |
+| `checkboxes` | `CheckboxList` (with `->options([])`) | `TextColumn` | `json` |
+| `radio` | `Radio` (with `->options([])`) | `TextColumn` | `string` |
+| `toggleButtons` | `ToggleButtons` (with `->options([])`) | `TextColumn` (badge) | `string` |
 
 ### File & Media
 
@@ -219,7 +219,7 @@ name:string:required:max=100
 
 | Type | Form Component | Table Column | Migration Type |
 |---|---|---|---|
-| `richtext` / `editor` | `RichEditor` | `TextColumn` (limit 50, tooltip) | `text` |
+| `richtext` / `editor` | `RichEditor` | `TextColumn` (limit 50, tooltip) | `longText` |
 | `markdown` | `MarkdownEditor` | `TextColumn` (limit 50, tooltip) | `text` |
 
 ### Special
@@ -279,11 +279,11 @@ You can optionally specify fields for the related model. If the related model do
 |---|---|---|
 | `belongsTo` | Many-to-one (e.g. Product belongs to Category) | Adds `foreignId` column + `constrained()->onDelete('cascade')` to migration |
 | `belongsToMany` | Many-to-many (e.g. Course has many Students) | Creates pivot table with foreign keys and unique constraint. Also generates the inverse relationship on the related model |
-| `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model. Adds `foreignId` FK column to the related model's migration |
-| `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model. Adds `foreignId` FK column to the related model's migration |
+| `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model. Automatically adds `foreignId` + `constrained()` FK column to the related model's migration |
+| `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model. Automatically adds `foreignId` + `constrained()` FK column to the related model's migration |
 | `morphTo` | Polymorphic inverse (e.g. Comment belongs to Post or Video) | Adds `$table->morphs('{morphName}')` to migration; the second segment is the morph name |
-| `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method with auto-derived morph name (`{snake(relatedModel)}able`) |
-| `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method with auto-derived morph name (`{snake(relatedModel)}able`) |
+| `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method. Morph name can be explicit (`morphOne:Attachment:attachable`) or auto-derived (`{snake(relatedModel)}able`) |
+| `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method. Morph name can be explicit (`morphMany:Attachment:attachable`) or auto-derived (`{snake(relatedModel)}able`) |
 
 **Polymorphic examples:**
 
@@ -293,11 +293,25 @@ You can optionally specify fields for the related model. If the related model do
 
 # Post model that morphs one Image and many Comments
 --relations="morphOne:Image;morphMany:Comment"
+
+# Attachment model with morphTo, and parent models with explicit morph name
+# Child: --relations="morphTo:attachable"
+# Parent: --relations="morphMany:Attachment:attachable"
 ```
 
 For `morphTo`, the second segment is the **morph name** (e.g. `commentable`), not a model class. The generator adds `$table->morphs('commentable')` to the migration and `$this->morphTo()` to the model.
 
-For `morphOne` and `morphMany`, the second segment is the **related model class**. The morph name is automatically derived as `{snake(relatedModel)}able` (e.g. `imageable` for related model `Image`, `commentable` for `Comment`).
+For `morphOne` and `morphMany`, the second segment is the **related model class**. You can optionally provide the **morph name** as a third segment to match the `morphTo` side exactly:
+
+```bash
+# Explicit morph name (recommended when the morph name differs from the auto-derived one)
+--relations="morphMany:Attachment:attachable"
+
+# Auto-derived morph name: {snake(relatedModel)}able (e.g. imageable, commentable)
+--relations="morphOne:Image"
+```
+
+When using `morphTo:attachable` on the child model, make sure the parent's `morphMany` or `morphOne` uses the same morph name (`attachable`), either explicitly or by auto-derivation.
 
 ### Examples
 
@@ -398,6 +412,7 @@ For each model, the generator creates or updates:
 
 - **Fillable fields** — All defined fields are added to the model's `$fillable` array
 - **Type casts** — Boolean, date, datetime, integer, decimal, and JSON fields get proper Eloquent casts
+- **Options placeholder** — Selection components (`Select`, `Radio`, `ToggleButtons`, `CheckboxList`) include `->options([])` so they render correctly out of the box; `foreignId` uses `->relationship()` instead
 - **Smart imports** — Only the required Filament component classes are imported, with no duplicates. Existing imports not managed by the generator (e.g. `BackedEnum`, `Heroicon`, Page classes) are preserved
 - **Relationship return types** — Generated relationship methods include proper return type hints (e.g. `: HasMany`, `: BelongsTo`)
 - **Table filters** — Boolean fields get ternary filters; date/numeric fields get range filters; foreign keys get select filters

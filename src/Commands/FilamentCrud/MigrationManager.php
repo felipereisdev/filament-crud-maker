@@ -248,6 +248,7 @@ class MigrationManager
             'richtext' => 'longText',
             'editor' => 'longText',
             'decimal' => 'decimal(10, 2)',
+            'float' => 'float(8, 2)',
         ];
 
         return $typeMap[$type] ?? $type;

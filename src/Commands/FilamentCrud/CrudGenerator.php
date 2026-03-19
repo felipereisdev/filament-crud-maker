@@ -55,23 +55,56 @@ class CrudGenerator
                     continue;
                 }
 
-                // Split into parts: type:model:fields
+                // Split into parts: type:model[:morphName]:fields
                 $parts = explode(':', $relationGroup);
 
                 if (count($parts) >= 2) {
                     $relationType = trim($parts[0]);
                     $relatedModel = trim($parts[1]);
 
-                    // Add the relation to the relations array
-                    $relationArray[] = $relationType.':'.$relatedModel;
+                    // For morphOne/morphMany, check if the third segment is a morph name
+                    // (lowercase identifier, not a field definition like "name" in "name:string")
+                    $morphName = null;
+                    $fieldsStartIndex = 2;
+
+                    if (in_array($relationType, ['morphOne', 'morphMany']) && count($parts) > 2) {
+                        $candidate = trim($parts[2]);
+                        // A morph name is a lowercase snake_case identifier that is NOT followed by
+                        // a field type (i.e. the next part would be a known field type or another morph name segment)
+                        if (preg_match('/^[a-z][a-z_]*$/', $candidate)) {
+                            // Check if this looks like a morph name (not a field name with type after it)
+                            $hasTypeAfter = count($parts) > 3 && preg_match('/^[a-z][a-zA-Z]+$/', trim($parts[3]));
+                            $isFieldDef = count($parts) > 3 && in_array(trim($parts[3]), [
+                                'string', 'text', 'textarea', 'longtext', 'boolean', 'integer', 'bigInteger',
+                                'decimal', 'float', 'double', 'date', 'datetime', 'time', 'select', 'enum',
+                                'foreignId', 'checkboxes', 'radio', 'color', 'file', 'image', 'richtext',
+                                'editor', 'markdown', 'tags', 'code', 'json', 'slider', 'range',
+                                'toggleButtons', 'keyvalue', 'checkbox',
+                            ]);
+
+                            if (! $isFieldDef && ! $hasTypeAfter) {
+                                // Standalone morph name with no fields after it
+                                $morphName = $candidate;
+                                $fieldsStartIndex = 3;
+                            } elseif ($isFieldDef) {
+                                // Next part is a field type, so this is a morph name followed by fields
+                                $morphName = $candidate;
+                                $fieldsStartIndex = 3;
+                            }
+                        }
+                    }
+
+                    // Build the relation entry with optional morph name
+                    $relationEntry = $relationType.':'.$relatedModel;
+                    if ($morphName !== null) {
+                        $relationEntry .= ':'.$morphName;
+                    }
+                    $relationArray[] = $relationEntry;
 
                     // If fields are specified, process them
-                    if (count($parts) > 2) {
-                        // Extract all fields from the related model
-                        $relatedFields = [];
-
-                        // Rebuild the fields string after the model
-                        $fieldsStr = implode(':', array_slice($parts, 2));
+                    if (count($parts) > $fieldsStartIndex) {
+                        // Rebuild the fields string after the model (and optional morph name)
+                        $fieldsStr = implode(':', array_slice($parts, $fieldsStartIndex));
 
                         // Split by comma, respecting commas inside validation values
                         $relatedFields = self::splitFields($fieldsStr);

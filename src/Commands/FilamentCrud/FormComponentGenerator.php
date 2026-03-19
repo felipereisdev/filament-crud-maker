@@ -18,13 +18,13 @@ class FormComponentGenerator
             'date' => "DatePicker::make('{$fieldName}')",
             'datetime' => "DateTimePicker::make('{$fieldName}')",
             'time' => "TimePicker::make('{$fieldName}')",
-            'select', 'enum' => "Select::make('{$fieldName}')",
+            'select', 'enum' => "Select::make('{$fieldName}')->options([])",
             'foreignId' => "Select::make('{$fieldName}')"
                 .(str_replace('_id', '', $fieldName) !== $fieldName
                     ? "->relationship('".str_replace('_id', '', $fieldName)."', 'name')"
                     : ''),
-            'checkboxes' => "CheckboxList::make('{$fieldName}')",
-            'radio' => "Radio::make('{$fieldName}')",
+            'checkboxes' => "CheckboxList::make('{$fieldName}')->options([])",
+            'radio' => "Radio::make('{$fieldName}')->options([])",
             'color' => "ColorPicker::make('{$fieldName}')",
             'file' => "FileUpload::make('{$fieldName}')"
                 ."->disk('public')"
@@ -40,7 +40,7 @@ class FormComponentGenerator
             'tags' => "TagsInput::make('{$fieldName}')",
             'code', 'json' => "CodeEditor::make('{$fieldName}')",
             'slider', 'range' => "Slider::make('{$fieldName}')",
-            'toggleButtons' => "ToggleButtons::make('{$fieldName}')",
+            'toggleButtons' => "ToggleButtons::make('{$fieldName}')->options([])",
             'keyvalue' => "KeyValue::make('{$fieldName}')",
             'checkbox' => "Checkbox::make('{$fieldName}')",
             'decimal', 'float', 'double' => "TextInput::make('{$fieldName}')"

@@ -14,6 +14,7 @@ use Freis\FilamentCrudGenerator\Commands\FilamentCrud\ModelManager;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\ResourceUpdater;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\TableComponentGenerator;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 class MakeFilamentCrud extends Command
 {
@@ -176,7 +177,18 @@ class MakeFilamentCrud extends Command
                     break;
                 }
 
-                $relationParts[] = $relationType.':'.$relatedModel;
+                $relationDef = $relationType.':'.$relatedModel;
+
+                // For morphOne/morphMany, ask for the morph name (optional)
+                if (in_array($relationType, ['morphOne', 'morphMany'])) {
+                    $defaultMorphName = Str::snake($relatedModel).'able';
+                    $morphNameInput = $this->ask("Morph name (leave empty for '{$defaultMorphName}')");
+                    if (is_string($morphNameInput) && $morphNameInput !== '' && $morphNameInput !== $defaultMorphName) {
+                        $relationDef .= ':'.$morphNameInput;
+                    }
+                }
+
+                $relationParts[] = $relationDef;
 
                 if (! $this->confirm('Add another relationship?', false)) {
                     break;
