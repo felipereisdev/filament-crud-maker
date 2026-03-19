@@ -3,7 +3,7 @@
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\ImportManager;
 
 beforeEach(function () {
-    $this->manager = new ImportManager();
+    $this->manager = new ImportManager;
 });
 
 // --- removeDuplicateImports() ---

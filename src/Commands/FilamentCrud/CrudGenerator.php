@@ -14,8 +14,7 @@ class CrudGenerator
         private readonly ResourceUpdater $resourceUpdater,
         private readonly CodeFormatter $codeFormatter,
         private readonly ?Command $command = null
-    ) {
-    }
+    ) {}
 
     /**
      * Generates a complete CRUD for the specified model
@@ -26,7 +25,7 @@ class CrudGenerator
         string $relations = '',
         bool $softDeletes = false,
         bool $skipMigrations = false,
-        bool $skipCsFixer = false
+        bool $skipFormatting = false
     ): bool {
         $this->log("Generating CRUD for model {$model}");
 
@@ -44,7 +43,7 @@ class CrudGenerator
             }
         }
 
-        $this->log("Fields to process: " . count($fieldArray));
+        $this->log('Fields to process: '.count($fieldArray));
         foreach ($fieldArray as $field) {
             $this->log("Field: {$field}");
         }
@@ -70,7 +69,7 @@ class CrudGenerator
                     $relatedModel = trim($parts[1]);
 
                     // Add the relation to the relations array
-                    $relationArray[] = $relationType . ':' . $relatedModel;
+                    $relationArray[] = $relationType.':'.$relatedModel;
 
                     // If fields are specified, process them
                     if (count($parts) > 2) {
@@ -92,7 +91,7 @@ class CrudGenerator
 
                         $relatedFieldsMap[$relatedModel] = $relatedFields;
 
-                        $this->log("Fields for related model {$relatedModel}: " . count($relatedFields));
+                        $this->log("Fields for related model {$relatedModel}: ".count($relatedFields));
                         foreach ($relatedFields as $field) {
                             $this->log("Related field: {$field}");
                         }
@@ -111,7 +110,7 @@ class CrudGenerator
         $this->migrationManager->updateMigration($model, $fieldArray, $relationArray);
 
         // Create the Filament resource
-        $this->log('Creating Filament resource for ' . $model);
+        $this->log('Creating Filament resource for '.$model);
         Artisan::call('make:filament-resource', [
             'name' => $model,
             '--generate' => true,
@@ -129,7 +128,7 @@ class CrudGenerator
         }
 
         // Format code if needed
-        if (! $skipCsFixer) {
+        if (! $skipFormatting) {
             $this->codeFormatter->format();
         }
 
@@ -138,7 +137,7 @@ class CrudGenerator
             $this->migrationManager->runMigrations();
         }
 
-        $this->log('Filament CRUD for ' . $model . ' generated successfully!');
+        $this->log('Filament CRUD for '.$model.' generated successfully!');
 
         return true;
     }
@@ -146,14 +145,14 @@ class CrudGenerator
     /**
      * Creates related models
      *
-     * @param array<int, string> $relationArray
-     * @param array<string, array<int, string>> $relatedFieldsMap
+     * @param  array<int, string>  $relationArray
+     * @param  array<string, array<int, string>>  $relatedFieldsMap
      */
     private function createRelatedModels(array $relationArray, string $mainModel, array $relatedFieldsMap, bool $softDeletes): void
     {
         foreach ($relationArray as $relation) {
             if (strpos($relation, ':') !== false) {
-                list($relationType, $relatedModel) = explode(':', $relation);
+                [$relationType, $relatedModel] = explode(':', $relation);
 
                 // Do not create the main model again
                 if ($relatedModel === $mainModel) {
@@ -161,8 +160,8 @@ class CrudGenerator
                 }
 
                 // Check if the model already exists
-                if (! File::exists(app_path('Models/' . $relatedModel . '.php'))) {
-                    $this->log('Creating related model ' . $relatedModel);
+                if (! File::exists(app_path('Models/'.$relatedModel.'.php'))) {
+                    $this->log('Creating related model '.$relatedModel);
 
                     // Create the model
                     $this->modelManager->createIfNotExists($relatedModel, $softDeletes);
@@ -178,9 +177,9 @@ class CrudGenerator
                         $this->modelManager->updateModel($relatedModel, $fields, [], $softDeletes);
                     }
 
-                    $this->log('Related model ' . $relatedModel . ' created successfully!');
+                    $this->log('Related model '.$relatedModel.' created successfully!');
                 } else {
-                    $this->log('Related model ' . $relatedModel . ' already exists.');
+                    $this->log('Related model '.$relatedModel.' already exists.');
 
                     // Add soft deletes if needed
                     if ($softDeletes) {
@@ -195,8 +194,8 @@ class CrudGenerator
     /**
      * Creates Filament resources for related models
      *
-     * @param array<int, string> $relationArray
-     * @param array<string, array<int, string>> $relatedFieldsMap
+     * @param  array<int, string>  $relationArray
+     * @param  array<string, array<int, string>>  $relatedFieldsMap
      */
     private function createRelatedResources(array $relationArray, array $relatedFieldsMap): void
     {
@@ -204,7 +203,7 @@ class CrudGenerator
 
         foreach ($relationArray as $relation) {
             if (strpos($relation, ':') !== false) {
-                list($relationType, $relatedModel) = explode(':', $relation);
+                [$relationType, $relatedModel] = explode(':', $relation);
 
                 // Avoid duplication
                 if (in_array($relatedModel, $processedModels)) {
@@ -214,8 +213,8 @@ class CrudGenerator
                 $processedModels[] = $relatedModel;
 
                 // Check if the resource already exists
-                if (! File::exists(app_path('Filament/Resources/' . $relatedModel . 'Resource.php'))) {
-                    $this->log('Creating Filament resource for ' . $relatedModel);
+                if (! File::exists(app_path('Filament/Resources/'.$relatedModel.'Resource.php'))) {
+                    $this->log('Creating Filament resource for '.$relatedModel);
 
                     Artisan::call('make:filament-resource', [
                         'name' => $relatedModel,
@@ -226,21 +225,21 @@ class CrudGenerator
                     $fieldsToUse = isset($relatedFieldsMap[$relatedModel]) ? $relatedFieldsMap[$relatedModel] : [];
 
                     if (! empty($fieldsToUse)) {
-                        $this->log("Updating resource for {$relatedModel} with " . count($fieldsToUse) . " fields");
+                        $this->log("Updating resource for {$relatedModel} with ".count($fieldsToUse).' fields');
                         // Update the resource with the fields
                         $this->resourceUpdater->update($relatedModel, $fieldsToUse, false);
                     } else {
                         $this->log("No fields found for related model {$relatedModel}");
                     }
 
-                    $this->log('Resource for ' . $relatedModel . ' created successfully!');
+                    $this->log('Resource for '.$relatedModel.' created successfully!');
                 } else {
-                    $this->log('Resource for ' . $relatedModel . ' already exists.');
+                    $this->log('Resource for '.$relatedModel.' already exists.');
 
                     // Update the resource even if it already exists
                     $fieldsToUse = isset($relatedFieldsMap[$relatedModel]) ? $relatedFieldsMap[$relatedModel] : [];
                     if (! empty($fieldsToUse)) {
-                        $this->log("Updating existing resource for {$relatedModel} with " . count($fieldsToUse) . " fields");
+                        $this->log("Updating existing resource for {$relatedModel} with ".count($fieldsToUse).' fields');
                         $this->resourceUpdater->update($relatedModel, $fieldsToUse, false);
                     }
                 }

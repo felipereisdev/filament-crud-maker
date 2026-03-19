@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Freis\FilamentCrudGenerator\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Freis\FilamentCrudGenerator\Commands\MakeFilamentCrud;
+use Illuminate\Support\ServiceProvider;
 
 class FilamentCrudGeneratorServiceProvider extends ServiceProvider
 {
@@ -13,13 +13,13 @@ class FilamentCrudGeneratorServiceProvider extends ServiceProvider
     {
         // Publish the configuration file
         $this->publishes([
-            __DIR__ . '/../config/filament-crud-generator.php' => config_path('filament-crud-generator.php'),
+            __DIR__.'/../config/filament-crud-generator.php' => config_path('filament-crud-generator.php'),
         ], 'filament-crud-generator-config');
 
-        // Publish the PHP CS Fixer configuration file
+        // Publish the Laravel Pint configuration file
         $this->publishes([
-            __DIR__ . '/../config/php-cs-fixer.dist.php.example' => base_path('.php-cs-fixer.dist.php.example'),
-        ], 'php-cs-fixer-config');
+            dirname(__DIR__, 3).'/pint.json' => base_path('pint.json'),
+        ], 'pint-config');
 
         // Register commands
         if ($this->app->runningInConsole()) {
@@ -33,7 +33,7 @@ class FilamentCrudGeneratorServiceProvider extends ServiceProvider
     {
         // Merge configurations
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/filament-crud-generator.php',
+            __DIR__.'/../config/filament-crud-generator.php',
             'filament-crud-generator'
         );
     }

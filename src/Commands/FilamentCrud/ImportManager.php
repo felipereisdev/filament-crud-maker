@@ -70,7 +70,7 @@ class ImportManager
     /**
      * Adds required imports based on the components used
      *
-     * @param array<int, string> $usedComponents
+     * @param  array<int, string>  $usedComponents
      */
     public function addRequiredImports(string $content, string $model, array $usedComponents, bool $softDeletes): string
     {
@@ -106,7 +106,7 @@ class ImportManager
         $imports = [];
         foreach ($usedComponents as $component) {
             if (isset(self::IMPORT_MAP[$component])) {
-                $imports[] = 'use ' . self::IMPORT_MAP[$component] . ';';
+                $imports[] = 'use '.self::IMPORT_MAP[$component].';';
             }
         }
 
@@ -123,9 +123,9 @@ class ImportManager
 
         // Add default imports required for any Filament resource
         $requiredImports = [
-            'use App\Filament\Resources\\' . $model . 'Resource\Pages;',
-            'use App\Filament\Resources\\' . $model . 'Resource\RelationManagers;',
-            'use App\Models\\' . $model . ';',
+            'use App\Filament\Resources\\'.$model.'Resource\Pages;',
+            'use App\Filament\Resources\\'.$model.'Resource\RelationManagers;',
+            'use App\Models\\'.$model.';',
             'use Filament\Resources\Resource;',
             'use Filament\Schemas\Schema;',
             'use Filament\Tables\Table;',
@@ -143,7 +143,7 @@ class ImportManager
 
             // Remove all existing imports between the namespace and the class
             $afterNamespace = substr($content, $namespaceEndPos);
-            $classPos = strpos($afterNamespace, 'class ' . $model . 'Resource');
+            $classPos = strpos($afterNamespace, 'class '.$model.'Resource');
 
             if ($classPos !== false) {
                 // Extract only the part between the namespace and the class
@@ -153,8 +153,8 @@ class ImportManager
                 $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
 
                 // Replace the content between the namespace and the class with new imports
-                $importString = "\n\n" . implode("\n", $imports) . "\n\n";
-                $content = substr($content, 0, $namespaceEndPos) . $importString .
+                $importString = "\n\n".implode("\n", $imports)."\n\n";
+                $content = substr($content, 0, $namespaceEndPos).$importString.
                           substr($afterNamespace, $classPos);
             }
         }
@@ -165,7 +165,7 @@ class ImportManager
     /**
      * Adds imports for Schema files (v4 form)
      *
-     * @param array<int, string> $formComponents
+     * @param  array<int, string>  $formComponents
      */
     public function addFormFileImports(string $content, array $formComponents): string
     {
@@ -173,7 +173,7 @@ class ImportManager
 
         foreach ($formComponents as $component) {
             if (isset(self::IMPORT_MAP[$component]) && str_starts_with(self::IMPORT_MAP[$component], 'Filament\Forms\Components\\')) {
-                $imports[] = 'use ' . self::IMPORT_MAP[$component] . ';';
+                $imports[] = 'use '.self::IMPORT_MAP[$component].';';
             }
         }
 
@@ -186,7 +186,7 @@ class ImportManager
     /**
      * Adds imports for Table files (v4 columns, filters, actions)
      *
-     * @param array<int, string> $tableComponents
+     * @param  array<int, string>  $tableComponents
      */
     public function addTableFileImports(string $content, array $tableComponents, bool $softDeletes): string
     {
@@ -218,7 +218,7 @@ class ImportManager
 
         foreach (array_unique($tableComponents) as $component) {
             if (isset(self::IMPORT_MAP[$component])) {
-                $imports[] = 'use ' . self::IMPORT_MAP[$component] . ';';
+                $imports[] = 'use '.self::IMPORT_MAP[$component].';';
             }
         }
 
@@ -240,7 +240,7 @@ class ImportManager
     /**
      * Inserts imports into the content after the namespace declaration
      *
-     * @param array<int, string> $imports
+     * @param  array<int, string>  $imports
      */
     private function insertImportsIntoContent(string $content, array $imports): string
     {
@@ -256,8 +256,8 @@ class ImportManager
                 $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
 
                 // Replace with new imports
-                $importString = "\n\n" . implode("\n", $imports) . "\n\n";
-                $content = substr($content, 0, $namespaceEndPos) . $importString . substr($afterNamespace, $classPos);
+                $importString = "\n\n".implode("\n", $imports)."\n\n";
+                $content = substr($content, 0, $namespaceEndPos).$importString.substr($afterNamespace, $classPos);
             }
         }
 

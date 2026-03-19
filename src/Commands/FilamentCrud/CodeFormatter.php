@@ -7,162 +7,95 @@ use Illuminate\Support\Facades\File;
 
 class CodeFormatter
 {
-    public function __construct(private readonly ?Command $command = null)
-    {
-    }
+    public function __construct(private readonly ?Command $command = null) {}
 
     /**
-     * Formats the code using PHP CS Fixer
+     * Formats the code using Laravel Pint
      */
     public function format(): bool
     {
-        $this->log('Formatting code with PHP CS Fixer...');
+        $this->log('Formatting code with Laravel Pint...');
 
-        // Check if PHP CS Fixer is installed
-        $hasCsFixer = $this->executeCommand('which php-cs-fixer', true);
-        $composerBin = base_path('vendor/bin/php-cs-fixer');
+        $composerBin = base_path('vendor/bin/pint');
 
-        if (empty($hasCsFixer) && ! file_exists($composerBin)) {
-            $this->log('PHP CS Fixer not found. Trying to install via Composer...', 'warn');
+        if (! file_exists($composerBin)) {
+            $this->log('Laravel Pint not found. Trying to install via Composer...', 'warn');
 
-            // Check if composer.json exists
             if (! file_exists(base_path('composer.json'))) {
-                $this->log('composer.json not found. Cannot install PHP CS Fixer.', 'error');
+                $this->log('composer.json not found. Cannot install Laravel Pint.', 'error');
 
                 return false;
             }
 
-            // Install PHP CS Fixer
-            if ($this->executeCommand('composer require friendsofphp/php-cs-fixer --dev', false)) {
-                $this->log('PHP CS Fixer installed successfully!');
-
-                // Create configuration file if it does not exist
-                $this->createCsFixerConfig();
+            if ($this->executeCommand('composer require laravel/pint --dev', false)) {
+                $this->log('Laravel Pint installed successfully!');
+                $this->createPintConfig();
             } else {
-                $this->log('Failed to install PHP CS Fixer. Skipping code formatting.', 'error');
+                $this->log('Failed to install Laravel Pint. Skipping code formatting.', 'error');
 
                 return false;
             }
         }
 
-        // Check and create configuration file if needed
-        $this->createCsFixerConfig();
-
-        // Run PHP CS Fixer
-        $csFixerCommand = file_exists($composerBin) ? $composerBin : 'php-cs-fixer';
+        $this->createPintConfig();
 
         try {
-            if (file_exists(base_path('.php-cs-fixer.dist.php'))) {
-                // Use .dist.php configuration
-                $this->log('Using .php-cs-fixer.dist.php configuration');
-                $result = $this->executeCommand("{$csFixerCommand} fix --config=.php-cs-fixer.dist.php", false);
-            } elseif (file_exists(base_path('.php-cs-fixer.php'))) {
-                // Use existing configuration
-                $this->log('Using existing PHP CS Fixer configuration');
-                $result = $this->executeCommand("{$csFixerCommand} fix --config=.php-cs-fixer.php", false);
-            } else {
-                // Use default configuration, specifying directories
-                $result = $this->executeCommand("{$csFixerCommand} fix app/ --allow-risky=yes", false);
-            }
+            $result = $this->executeCommand("{$composerBin}", false);
 
             if ($result) {
                 $this->log('Code formatted successfully!');
 
                 return true;
             } else {
-                $this->log('PHP CS Fixer found issues. Check the log for details.', 'warn');
+                $this->log('Laravel Pint found issues. Check the log for details.', 'warn');
 
                 return false;
             }
         } catch (\Exception $e) {
-            $this->log('Error running PHP CS Fixer: ' . $e->getMessage(), 'error');
+            $this->log('Error running Laravel Pint: '.$e->getMessage(), 'error');
 
             return false;
         }
     }
 
     /**
-     * Creates the PHP CS Fixer configuration file
+     * Creates the Laravel Pint configuration file if it does not exist
      */
-    private function createCsFixerConfig(): void
+    private function createPintConfig(): void
     {
-        $configFileOld = base_path('.php-cs-fixer.php');
-        $configFileNew = base_path('.php-cs-fixer.dist.php');
-        $configFileExample = base_path('.php-cs-fixer.dist.php.example');
+        $configFile = base_path('pint.json');
 
-        $phpCsFixerConfig = <<<'PHP'
-<?php
+        if (file_exists($configFile)) {
+            return;
+        }
 
-$finder = PhpCsFixer\Finder::create()
-    ->in([
-        __DIR__ . '/app',
-        __DIR__ . '/config',
-        __DIR__ . '/database',
-        __DIR__ . '/resources',
-        __DIR__ . '/routes',
-        __DIR__ . '/tests',
-    ])
-    ->name('*.php')
-    ->notName('*.blade.php')
-    ->ignoreDotFiles(true)
-    ->ignoreVCS(true);
+        $this->log('Creating Laravel Pint configuration...');
 
-$config = new PhpCsFixer\Config();
-return $config->setRules([
-        '@PSR12' => true,
-        'array_syntax' => ['syntax' => 'short'],
-        'ordered_imports' => ['sort_algorithm' => 'alpha'],
-        'no_unused_imports' => true,
-        'not_operator_with_successor_space' => true,
-        'trailing_comma_in_multiline' => true,
-        'phpdoc_scalar' => true,
-        'unary_operator_spaces' => true,
-        'binary_operator_spaces' => true,
-        'blank_line_before_statement' => [
-            'statements' => ['break', 'continue', 'declare', 'return', 'throw', 'try'],
-        ],
-        'phpdoc_single_line_var_spacing' => true,
-        'phpdoc_var_without_name' => true,
-        'class_attributes_separation' => [
-            'elements' => [
-                'method' => 'one',
+        /** @var array<string, mixed> $pintConfig */
+        $pintConfig = [
+            'preset' => 'laravel',
+            'rules' => [
+                'blank_line_before_statement' => [
+                    'statements' => ['break', 'continue', 'declare', 'return', 'throw', 'try'],
+                ],
+                'class_attributes_separation' => [
+                    'elements' => ['method' => 'one'],
+                ],
+                'method_argument_space' => [
+                    'on_multiline' => 'ensure_fully_multiline',
+                    'keep_multiple_spaces_after_comma' => true,
+                ],
+                'phpdoc_scalar' => true,
+                'phpdoc_single_line_var_spacing' => true,
+                'phpdoc_var_without_name' => true,
             ],
-        ],
-        'method_argument_space' => [
-            'on_multiline' => 'ensure_fully_multiline',
-            'keep_multiple_spaces_after_comma' => true,
-        ],
-        'single_trait_insert_per_statement' => true,
-    ])
-    ->setFinder($finder);
-PHP;
+        ];
 
-        // First check if the example file exists, and create it if not
-        if (! file_exists($configFileExample)) {
-            $this->log('Creating PHP CS Fixer example configuration...');
-            File::put($configFileExample, $phpCsFixerConfig);
-            $this->log('.php-cs-fixer.dist.php.example file created!');
-        }
+        $json = json_encode($pintConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
-        // Check if the .php-cs-fixer.dist.php file exists, if not, copy from example
-        if (! file_exists($configFileNew)) {
-            $this->log('.php-cs-fixer.dist.php file not found. Creating...');
-
-            if (file_exists($configFileExample)) {
-                // Copy from example
-                File::copy($configFileExample, $configFileNew);
-                $this->log('.php-cs-fixer.dist.php file created from example!');
-            } else {
-                // Create file directly
-                File::put($configFileNew, $phpCsFixerConfig);
-                $this->log('.php-cs-fixer.dist.php file created!');
-            }
-        }
-
-        // If the old file exists but the new one does not, migrate to the new format
-        if (file_exists($configFileOld) && ! file_exists($configFileNew)) {
-            File::copy($configFileOld, $configFileNew);
-            $this->log('.php-cs-fixer.php migrated to .php-cs-fixer.dist.php!');
+        if ($json !== false) {
+            File::put($configFile, $json."\n");
+            $this->log('pint.json file created!');
         }
     }
 
