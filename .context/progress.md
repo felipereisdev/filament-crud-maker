@@ -79,3 +79,18 @@
   - ReflectionClass can access `private const array IMPORT_MAP` for direct constant assertions
   - Pest `->with([])` datasets work well for parameterized tests on component type mappings
   - The `strpos()` call in `findMatchingCloseBrace` returns `int|false` which makes position arithmetic clean for test assertions
+
+## US-007: Feature tests with Pest for MakeFilamentCrud command
+- Created tests/Feature/MakeFilamentCrudTest.php with 4 test scenarios:
+  - Command is registered: verifies `make:filament-crud` key exists in `Artisan::all()`
+  - Requires model name: runs command without model argument, asserts error message and exit code 1
+  - Displays input information: runs command with model/fields/relations, verifies output contains model name, fields, and relations info
+  - Flag --clean-resources works correctly: runs command with `--clean-resources`, verifies output and exit code 0
+- All 175 tests pass (171 unit + 4 feature, 245 assertions) in 0.52s
+- PHPStan error count remains at 46 (no new errors — PHPStan only analyzes src/)
+- **Files changed:** tests/Feature/MakeFilamentCrudTest.php (new)
+- **Learnings for future iterations:**
+  - Laravel's Illuminate\Console\Application sets `setCatchExceptions(false)`, so exceptions from commands propagate to the test — cannot use `$this->artisan()` (PendingCommand) when the command throws internally
+  - For commands that throw during execution, use `Kernel::call()` with a BufferedOutput and try-catch to capture output written before the exception
+  - The `--clean-resources` test works because `cleanAllResources()` always returns true regardless of CodeFormatter::format() success/failure
+  - CodeFormatter::format() runs shell commands (system/shell_exec) during `--clean-resources` — these produce console output but don't affect test assertions since PendingCommand captures command output separately
