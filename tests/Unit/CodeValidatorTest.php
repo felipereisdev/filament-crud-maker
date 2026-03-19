@@ -3,7 +3,7 @@
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeValidator;
 
 beforeEach(function () {
-    $this->validator = new CodeValidator();
+    $this->validator = new CodeValidator;
 });
 
 // --- validateSyntax() ---

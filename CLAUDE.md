@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Laravel PHP package (`freis/filament-crud-generator`) that generates complete CRUD resources for Filament v4 admin panels. It creates Models, Migrations, and Filament Resources with customizable fields, validations, and relationships via a single Artisan command.
+Laravel PHP package (`freis/filament-crud-generator`) that generates complete CRUD resources for Filament v4/v5 admin panels. It creates Models, Migrations, and Filament Resources with customizable fields, validations, and relationships via a single Artisan command.
 
 Documentation and code are in English.
 
@@ -21,7 +21,7 @@ composer test          # runs vendor/bin/pest
 composer analyse       # runs vendor/bin/phpstan analyse
 
 # Format code
-composer cs-fix        # runs php-cs-fixer with PSR-12 rules
+composer format        # runs Laravel Pint with Laravel preset
 
 # Run a single test
 vendor/bin/pest --filter test_method_name
@@ -42,7 +42,7 @@ The package follows a Command + Manager pattern with single-responsibility class
    - `FormComponentGenerator` — Maps field types → Filament form components (TextInput, Toggle, DatePicker, etc.)
    - `TableComponentGenerator` — Maps field types → Filament table columns
    - `ImportManager` — Manages PHP `use` statements, prevents duplicates
-   - `CodeFormatter` — Wraps PHP CS Fixer integration
+   - `CodeFormatter` — Wraps Laravel Pint integration
    - `CodeValidator` — Validates generated code syntax (bracket balancing)
 
 4. **Service Provider** (`src/Providers/FilamentCrudGeneratorServiceProvider.php`) — Registers the command and publishes config. Auto-discovered via `composer.json` extra.
@@ -51,8 +51,8 @@ The package follows a Command + Manager pattern with single-responsibility class
 
 ## Key Dependencies
 
-- **PHP ^8.3**, **Laravel ^11.28|^12**, **Filament ^4.0**
-- **PHP-CS-Fixer ^3.0** for code formatting
+- **PHP ^8.3**, **Laravel ^11.28|^12/^13**, **Filament ^4.0/^5.0**
+- **Laravel Pint ^1.0** for code formatting
 - **Pest ^3.0** for testing
 - **Larastan ^3.0** (PHPStan + Laravel) for static analysis at level 9
 - **Orchestra Testbench** for package testing within a Laravel environment

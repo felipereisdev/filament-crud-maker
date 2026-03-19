@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Freis\FilamentCrudGenerator\Commands;
 
-use Illuminate\Console\Command;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeFormatter;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeValidator;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CrudGenerator;
@@ -14,6 +13,7 @@ use Freis\FilamentCrudGenerator\Commands\FilamentCrud\MigrationManager;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\ModelManager;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\ResourceUpdater;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\TableComponentGenerator;
+use Illuminate\Console\Command;
 
 class MakeFilamentCrud extends Command
 {
@@ -50,33 +50,35 @@ class MakeFilamentCrud extends Command
 
         // Check if the model was provided
         $model = $this->argument('model');
-        if (empty($model)) {
+        if (! is_string($model) || empty($model)) {
             $this->error('You must provide a model name.');
 
             return 1;
         }
 
-        $fields = $this->option('fields') ?? '';
-        $relations = $this->option('relations') ?? '';
-        $softDeletes = $this->option('softDeletes') ?? false;
-        $skipMigrations = $this->option('no-migrate') ?? false;
-        $skipCsFixer = $this->option('no-format') ?? false;
+        $fieldsOption = $this->option('fields');
+        $relationsOption = $this->option('relations');
+        $fields = is_string($fieldsOption) ? $fieldsOption : '';
+        $relations = is_string($relationsOption) ? $relationsOption : '';
+        $softDeletes = (bool) $this->option('softDeletes');
+        $skipMigrations = (bool) $this->option('no-migrate');
+        $skipFormatting = (bool) $this->option('no-format');
 
         // Debug information
         $this->info('=== INPUT INFORMATION ===');
         $this->info("Model: {$model}");
         $this->info("Fields: {$fields}");
         $this->info("Relations: {$relations}");
-        $this->info("SoftDeletes: " . ($softDeletes ? 'Yes' : 'No'));
-        $this->info("Skip migrations: " . ($skipMigrations ? 'Yes' : 'No'));
-        $this->info("Skip formatting: " . ($skipCsFixer ? 'Yes' : 'No'));
+        $this->info('SoftDeletes: '.($softDeletes ? 'Yes' : 'No'));
+        $this->info('Skip migrations: '.($skipMigrations ? 'Yes' : 'No'));
+        $this->info('Skip formatting: '.($skipFormatting ? 'Yes' : 'No'));
         $this->info('========================');
 
         // Initialize the required classes
-        $codeValidator = new CodeValidator();
-        $importManager = new ImportManager();
-        $formGenerator = new FormComponentGenerator();
-        $tableGenerator = new TableComponentGenerator();
+        $codeValidator = new CodeValidator;
+        $importManager = new ImportManager;
+        $formGenerator = new FormComponentGenerator;
+        $tableGenerator = new TableComponentGenerator;
         $resourceUpdater = new ResourceUpdater(
             $formGenerator,
             $tableGenerator,
@@ -104,7 +106,7 @@ class MakeFilamentCrud extends Command
             $relations,
             $softDeletes,
             $skipMigrations,
-            $skipCsFixer
+            $skipFormatting
         );
 
         return $result ? 0 : 1;
@@ -118,10 +120,10 @@ class MakeFilamentCrud extends Command
         $this->info('Starting cleanup of all Filament resources...');
 
         // Initialize the required classes
-        $codeValidator = new CodeValidator();
-        $importManager = new ImportManager();
-        $formGenerator = new FormComponentGenerator();
-        $tableGenerator = new TableComponentGenerator();
+        $codeValidator = new CodeValidator;
+        $importManager = new ImportManager;
+        $formGenerator = new FormComponentGenerator;
+        $tableGenerator = new TableComponentGenerator;
         $resourceUpdater = new ResourceUpdater(
             $formGenerator,
             $tableGenerator,

@@ -8,35 +8,17 @@ use Illuminate\Support\Str;
 
 class MigrationManager
 {
-    public function __construct(private readonly ?Command $command = null)
-    {
-    }
-
-    /**
-     * Processes validation parameters and identifies which are relevant for migration
-     */
-    private function processValidations(string $param): ?array
-    {
-        $result = null;
-
-        // Validations with 'unique' - transform into unique index
-        if ($param === 'unique') {
-            $result['unique'] = true;
-        }
-        // Ignore min/max/between validations for values
-        elseif (preg_match('/^(min|max|between)=/', $param)) {
-            // Do nothing - these are form-only validations
-        }
-
-        return $result;
-    }
+    public function __construct(private readonly ?Command $command = null) {}
 
     /**
      * Updates the migration with the specified fields
+     *
+     * @param  array<int, string>  $fields
+     * @param  array<int, string>  $relationArray
      */
     public function updateMigration(string $model, array $fields, array $relationArray = []): bool
     {
-        $migrationFiles = File::glob(database_path('migrations/*_create_' . Str::snake(Str::plural($model)) . '_table.php'));
+        $migrationFiles = File::glob(database_path('migrations/*_create_'.Str::snake(Str::plural($model)).'_table.php'));
 
         if (empty($migrationFiles)) {
             $this->log('Migration file not found.', 'error');
@@ -51,9 +33,16 @@ class MigrationManager
         $tableDefinition = 'Schema::create';
         $closingStatement = '});';
         $startPos = strpos($content, $tableDefinition);
+
+        if ($startPos === false) {
+            $this->log('Could not find the table definition in the migration.', 'error');
+
+            return false;
+        }
+
         $endPos = strpos($content, $closingStatement, $startPos);
 
-        if ($startPos === false || $endPos === false) {
+        if ($endPos === false) {
             $this->log('Could not find the table definition in the migration.', 'error');
 
             return false;
@@ -84,7 +73,7 @@ class MigrationManager
                     $fieldDefinition .= ", {$typeParams}";
                 }
 
-                $fieldDefinition .= ")";
+                $fieldDefinition .= ')';
 
                 // Process validations and defaults
                 $isNullable = false;
@@ -110,29 +99,20 @@ class MigrationManager
 
                 // Apply nullable if specified
                 if ($isNullable) {
-                    $fieldDefinition .= "->nullable()";
+                    $fieldDefinition .= '->nullable()';
                 }
 
                 // Apply unique if specified
                 if ($isUnique) {
-                    $fieldDefinition .= "->unique()";
+                    $fieldDefinition .= '->unique()';
                 }
 
                 // Apply default value if specified
                 if ($defaultValue !== null) {
-                    if (in_array($defaultValue, ['true', 'false'])) {
-                        // Boolean values
-                        $fieldDefinition .= "->default(" . $defaultValue . ")";
-                    } elseif (is_numeric($defaultValue)) {
-                        // Numeric values
-                        $fieldDefinition .= "->default(" . $defaultValue . ")";
-                    } else {
-                        // String
-                        $fieldDefinition .= "->default('" . $defaultValue . "')";
-                    }
+                    $fieldDefinition .= '->default('.$defaultValue.')';
                 }
 
-                $fieldDefinition .= ";";
+                $fieldDefinition .= ';';
                 $fieldDefinitions .= $fieldDefinition;
             }
         }
@@ -141,10 +121,10 @@ class MigrationManager
         if (! empty($relationArray)) {
             foreach ($relationArray as $relation) {
                 if (strpos($relation, ':') !== false) {
-                    list($relationType, $relatedModel) = explode(':', $relation);
+                    [$relationType, $relatedModel] = explode(':', $relation);
 
                     if ($relationType === 'belongsTo') {
-                        $fieldDefinitions .= "\n            \$table->foreignId('" . Str::snake($relatedModel) . "_id')->constrained()->onDelete('cascade');";
+                        $fieldDefinitions .= "\n            \$table->foreignId('".Str::snake($relatedModel)."_id')->constrained()->onDelete('cascade');";
                     }
                 }
             }
@@ -161,7 +141,7 @@ class MigrationManager
             $modelPlural = Str::snake(Str::singular($model));
             foreach ($relationArray as $relation) {
                 if (strpos($relation, ':') !== false) {
-                    list($relationType, $relatedModel) = explode(':', $relation);
+                    [$relationType, $relatedModel] = explode(':', $relation);
 
                     if ($relationType === 'belongsToMany') {
                         $relatedModelPlural = Str::snake(Str::singular($relatedModel));
@@ -185,7 +165,7 @@ class MigrationManager
         }
 
         // Insert the fields into the migration
-        $newContent = substr($content, 0, $endPos) . $fieldDefinitions . "\n" . substr($content, $endPos);
+        $newContent = substr($content, 0, $endPos).$fieldDefinitions."\n".substr($content, $endPos);
 
         // If there are pivot tables, add their definitions
         if (! empty($pivotTables)) {
@@ -200,19 +180,24 @@ class MigrationManager
             }
 
             // Insert pivot tables after the main table
-            $endOfFirstCreate = strpos($newContent, "});", $endPos) + 3;
-            $newContent = substr($newContent, 0, $endOfFirstCreate) . $pivotContent . substr($newContent, $endOfFirstCreate);
+            $endOfFirstCreate = strpos($newContent, '});', $endPos) + 3;
+            $newContent = substr($newContent, 0, $endOfFirstCreate).$pivotContent.substr($newContent, $endOfFirstCreate);
 
             // Update the down() method to drop the pivot tables
-            $downPos = strpos($newContent, "down()");
-            $dropPos = strpos($newContent, "Schema::dropIfExists", $downPos);
+            $downPos = strpos($newContent, 'down()');
 
-            $dropStatements = '';
-            foreach ($pivotTables as $pivot) {
-                $dropStatements .= "\n        Schema::dropIfExists('{$pivot['table']}');";
+            if ($downPos !== false) {
+                $dropPos = strpos($newContent, 'Schema::dropIfExists', $downPos);
+
+                if ($dropPos !== false) {
+                    $dropStatements = '';
+                    foreach ($pivotTables as $pivot) {
+                        $dropStatements .= "\n        Schema::dropIfExists('{$pivot['table']}');";
+                    }
+
+                    $newContent = substr($newContent, 0, $dropPos).$dropStatements."\n".substr($newContent, $dropPos);
+                }
             }
-
-            $newContent = substr($newContent, 0, $dropPos) . $dropStatements . "\n" . substr($newContent, $dropPos);
         }
 
         File::put($migrationFile, $newContent);
@@ -232,6 +217,12 @@ class MigrationManager
             'image' => 'string',
             'color' => 'string',
             'file' => 'string',
+            'code' => 'longText',
+            'slider' => 'integer',
+            'range' => 'integer',
+            'toggleButtons' => 'string',
+            'keyvalue' => 'json',
+            'checkbox' => 'boolean',
         ];
 
         return $typeMap[$type] ?? $type;
@@ -272,7 +263,7 @@ class MigrationManager
     /**
      * Executes a system command and returns the result
      */
-    private function executeCommand(string $command, bool $returnOutput = false)
+    private function executeCommand(string $command, bool $returnOutput = false): string|bool|null
     {
         $this->log("Running: {$command}");
 

@@ -4,7 +4,7 @@ use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeValidator;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\TableComponentGenerator;
 
 beforeEach(function () {
-    $this->generator = new TableComponentGenerator();
+    $this->generator = new TableComponentGenerator;
 });
 
 // --- Column type mapping ---
@@ -125,6 +125,53 @@ it('generates limit and tooltip for editor type', function () {
     expect($result)
         ->toContain('->limit(50)')
         ->toContain('->tooltip(');
+});
+
+it('generates limit and tooltip for code type', function () {
+    $result = $this->generator->generateColumn('snippet', 'code');
+    expect($result)
+        ->toContain('->limit(50)')
+        ->toContain('->tooltip(');
+});
+
+it('generates limit and tooltip for json type', function () {
+    $result = $this->generator->generateColumn('metadata', 'json');
+    expect($result)
+        ->toContain('->limit(50)')
+        ->toContain('->tooltip(');
+});
+
+it('generates limit and tooltip for keyvalue type', function () {
+    $result = $this->generator->generateColumn('settings', 'keyvalue');
+    expect($result)
+        ->toContain('->limit(50)')
+        ->toContain('->tooltip(');
+});
+
+it('generates numeric TextColumn for slider type', function () {
+    $result = $this->generator->generateColumn('volume', 'slider');
+    expect($result)
+        ->toContain("TextColumn::make('volume')")
+        ->toContain('->numeric()');
+});
+
+it('generates numeric TextColumn for range type', function () {
+    $result = $this->generator->generateColumn('age_range', 'range');
+    expect($result)
+        ->toContain("TextColumn::make('age_range')")
+        ->toContain('->numeric()');
+});
+
+it('generates TextColumn with badge for toggleButtons type', function () {
+    $result = $this->generator->generateColumn('status', 'toggleButtons');
+    expect($result)
+        ->toContain("TextColumn::make('status')")
+        ->toContain('->badge()');
+});
+
+it('generates ToggleColumn for checkbox type', function () {
+    $result = $this->generator->generateColumn('agreed', 'checkbox');
+    expect($result)->toContain("ToggleColumn::make('agreed')");
 });
 
 // --- ForeignId relationship column ---
@@ -280,6 +327,45 @@ it('returns null for unknown type filter', function () {
     expect($result)->toBeNull();
 });
 
+it('generates TernaryFilter for checkbox type', function () {
+    $result = $this->generator->generateFilter('agreed', 'checkbox');
+    expect($result)->toContain("TernaryFilter::make('agreed')");
+});
+
+it('generates SelectFilter for toggleButtons type', function () {
+    $result = $this->generator->generateFilter('status', 'toggleButtons');
+    expect($result)->toContain("SelectFilter::make('status')");
+});
+
+it('generates numeric range Filter for slider type', function () {
+    $result = $this->generator->generateFilter('volume', 'slider');
+    expect($result)
+        ->toContain("Filter::make('volume')")
+        ->toContain('TextInput::make');
+});
+
+it('generates numeric range Filter for range type', function () {
+    $result = $this->generator->generateFilter('age_range', 'range');
+    expect($result)
+        ->toContain("Filter::make('age_range')")
+        ->toContain('TextInput::make');
+});
+
+it('returns null for code type filter', function () {
+    $result = $this->generator->generateFilter('snippet', 'code');
+    expect($result)->toBeNull();
+});
+
+it('returns null for json type filter', function () {
+    $result = $this->generator->generateFilter('metadata', 'json');
+    expect($result)->toBeNull();
+});
+
+it('returns null for keyvalue type filter', function () {
+    $result = $this->generator->generateFilter('settings', 'keyvalue');
+    expect($result)->toBeNull();
+});
+
 // --- getComponentType() for columns ---
 
 it('returns correct column component type', function (string $fieldType, string $expectedComponent) {
@@ -294,6 +380,13 @@ it('returns correct column component type', function (string $fieldType, string 
     ['string', 'TextColumn'],
     ['integer', 'TextColumn'],
     ['date', 'TextColumn'],
+    ['checkbox', 'ToggleColumn'],
+    ['code', 'TextColumn'],
+    ['json', 'TextColumn'],
+    ['keyvalue', 'TextColumn'],
+    ['slider', 'TextColumn'],
+    ['range', 'TextColumn'],
+    ['toggleButtons', 'TextColumn'],
 ]);
 
 it('does not return BadgeColumn for any field type', function () {
@@ -316,6 +409,13 @@ it('returns correct filter component type', function (string $fieldType, string 
     ['datetime', 'Filter'],
     ['integer', 'Filter'],
     ['decimal', 'Filter'],
+    ['slider', 'Filter'],
+    ['range', 'Filter'],
+    ['checkbox', 'TernaryFilter'],
+    ['toggleButtons', 'SelectFilter'],
+    ['code', ''],
+    ['json', ''],
+    ['keyvalue', ''],
     ['string', ''],
 ]);
 
@@ -336,7 +436,7 @@ PHP;
 
     $columns = ["TextColumn::make('name')"];
     $filters = [];
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, $columns, $filters, $validator);
 
@@ -365,7 +465,7 @@ PHP;
 
     $columns = ["TextColumn::make('name')"];
     $filters = ["TernaryFilter::make('is_active')"];
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, $columns, $filters, $validator);
 
@@ -388,7 +488,7 @@ class ProductsTable
 PHP;
 
     $columns = ["TextColumn::make('name')"];
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, $columns, [], $validator);
 
@@ -399,7 +499,7 @@ PHP;
 
 it('returns content unchanged when columns and filters are empty', function () {
     $content = '<?php class Test { public static function table(Table $table): Table { return $table->columns([]); } }';
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, [], [], $validator);
     expect($result)->toBe($content);

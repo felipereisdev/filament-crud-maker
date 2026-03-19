@@ -4,7 +4,7 @@ use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeValidator;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\FormComponentGenerator;
 
 beforeEach(function () {
-    $this->generator = new FormComponentGenerator();
+    $this->generator = new FormComponentGenerator;
 });
 
 // --- Field type → component mapping ---
@@ -139,6 +139,41 @@ it('generates TextInput for unknown type', function () {
     expect($result)->toBe("TextInput::make('field')");
 });
 
+it('generates CodeEditor for code type', function () {
+    $result = $this->generator->generate('snippet', 'code');
+    expect($result)->toBe("CodeEditor::make('snippet')");
+});
+
+it('generates CodeEditor for json type', function () {
+    $result = $this->generator->generate('metadata', 'json');
+    expect($result)->toBe("CodeEditor::make('metadata')");
+});
+
+it('generates Slider for slider type', function () {
+    $result = $this->generator->generate('volume', 'slider');
+    expect($result)->toBe("Slider::make('volume')");
+});
+
+it('generates Slider for range type', function () {
+    $result = $this->generator->generate('age_range', 'range');
+    expect($result)->toBe("Slider::make('age_range')");
+});
+
+it('generates ToggleButtons for toggleButtons type', function () {
+    $result = $this->generator->generate('status', 'toggleButtons');
+    expect($result)->toBe("ToggleButtons::make('status')");
+});
+
+it('generates KeyValue for keyvalue type', function () {
+    $result = $this->generator->generate('settings', 'keyvalue');
+    expect($result)->toBe("KeyValue::make('settings')");
+});
+
+it('generates Checkbox for checkbox type', function () {
+    $result = $this->generator->generate('agreed', 'checkbox');
+    expect($result)->toBe("Checkbox::make('agreed')");
+});
+
 // --- Validation rules ---
 
 it('applies required validation', function () {
@@ -259,6 +294,13 @@ it('returns correct component type for each field type', function (string $field
     ['editor', 'RichEditor'],
     ['markdown', 'MarkdownEditor'],
     ['tags', 'TagsInput'],
+    ['code', 'CodeEditor'],
+    ['json', 'CodeEditor'],
+    ['slider', 'Slider'],
+    ['range', 'Slider'],
+    ['toggleButtons', 'ToggleButtons'],
+    ['keyvalue', 'KeyValue'],
+    ['checkbox', 'Checkbox'],
     ['unknown', 'TextInput'],
 ]);
 
@@ -282,7 +324,7 @@ PHP;
         "Toggle::make('is_active')",
     ];
 
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
     $result = $this->generator->updateFormMethod($content, $fields, $validator);
 
     expect($result)
@@ -309,7 +351,7 @@ PHP;
         "TextInput::make('name')",
     ];
 
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
     $result = $this->generator->updateFormMethod($content, $fields, $validator);
 
     expect($result)
@@ -319,7 +361,7 @@ PHP;
 
 it('returns content unchanged when form fields are empty', function () {
     $content = '<?php class Test { public static function form(Form $form): Form { return $form->schema([]); } }';
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateFormMethod($content, [], $validator);
     expect($result)->toBe($content);

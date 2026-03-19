@@ -9,17 +9,15 @@ use Illuminate\Support\Str;
 
 class ModelManager
 {
-    public function __construct(private readonly ?Command $command = null)
-    {
-    }
+    public function __construct(private readonly ?Command $command = null) {}
 
     /**
      * Checks if the model already exists and creates it if needed
      */
     public function createIfNotExists(string $model, bool $softDeletes = false): bool
     {
-        if (! File::exists(app_path('Models/' . $model . '.php'))) {
-            $this->log('Creating model ' . $model);
+        if (! File::exists(app_path('Models/'.$model.'.php'))) {
+            $this->log('Creating model '.$model);
             $modelCommand = [
                 'name' => $model,
                 '-m' => true, // Create migration
@@ -48,10 +46,13 @@ class ModelManager
 
     /**
      * Updates the model with relationships and required properties
+     *
+     * @param  array<int, string>  $fields
+     * @param  array<int, string>  $relations
      */
     public function updateModel(string $model, array $fields, array $relations, bool $softDeletes = false): bool
     {
-        $modelPath = app_path('Models/' . $model . '.php');
+        $modelPath = app_path('Models/'.$model.'.php');
 
         if (! File::exists($modelPath)) {
             $this->log("Model not found: {$modelPath}", 'error');
@@ -76,9 +77,12 @@ class ModelManager
 
         if ($softDeletes && ! $usesSoftDeletes) {
             // Find the class to add the trait
-            $pattern = '/class\s+' . $model . '\s+extends\s+Model\s*\{/';
+            $pattern = '/class\s+'.$model.'\s+extends\s+Model\s*\{/';
             $replacement = "class {$model} extends Model\n{\n    use SoftDeletes;\n";
             $content = preg_replace($pattern, $replacement, $content);
+            if ($content === null) {
+                return false;
+            }
         }
 
         // Add fillable properties based on fields
@@ -95,10 +99,10 @@ class ModelManager
         if (! empty($relations)) {
             foreach ($relations as $relation) {
                 if (strpos($relation, ':') !== false) {
-                    list($relationType, $relatedModel) = explode(':', $relation);
+                    [$relationType, $relatedModel] = explode(':', $relation);
 
                     if ($relationType === 'belongsTo') {
-                        $foreignKey = Str::snake($relatedModel) . '_id';
+                        $foreignKey = Str::snake($relatedModel).'_id';
                         if (! in_array("'{$foreignKey}'", $fillableFields)) {
                             $fillableFields[] = "'{$foreignKey}'";
                         }
@@ -120,7 +124,7 @@ class ModelManager
             $fillableProperty = "\n    protected \$fillable = [{$fillableString}];\n";
 
             // Find a good place to add fillable (after the class declaration)
-            $pattern = '/class\s+' . $model . '\s+extends\s+Model\s*\{[^\}]*?(\n\s*use\s+[^;]+;)?/s';
+            $pattern = '/class\s+'.$model.'\s+extends\s+Model\s*\{[^\}]*?(\n\s*use\s+[^;]+;)?/s';
             if (preg_match($pattern, $content, $matches)) {
                 $position = strpos($content, $matches[0]) + strlen($matches[0]);
                 $content = substr_replace($content, $fillableProperty, $position, 0);
@@ -136,7 +140,7 @@ class ModelManager
                 // Find the end of the class to add the methods
                 $endClassPos = strrpos($content, '}');
                 if ($endClassPos !== false) {
-                    $content = substr_replace($content, $relationMethods . "\n}", $endClassPos, 1);
+                    $content = substr_replace($content, $relationMethods."\n}", $endClassPos, 1);
                 }
             }
         }
@@ -153,7 +157,7 @@ class ModelManager
      */
     private function addSoftDeletesIfNotExists(string $model): void
     {
-        $modelPath = app_path('Models/' . $model . '.php');
+        $modelPath = app_path('Models/'.$model.'.php');
         $content = File::get($modelPath);
 
         $hasSoftDeletes = strpos($content, 'use Illuminate\Database\Eloquent\SoftDeletes;') !== false;
@@ -167,6 +171,8 @@ class ModelManager
 
     /**
      * Generates relationship methods based on the relations
+     *
+     * @param  array<int, string>  $relations
      */
     private function generateRelationMethods(array $relations): string
     {
@@ -174,7 +180,7 @@ class ModelManager
 
         foreach ($relations as $relation) {
             if (strpos($relation, ':') !== false) {
-                list($relationType, $relatedModel) = explode(':', $relation);
+                [$relationType, $relatedModel] = explode(':', $relation);
 
                 $methods .= match ($relationType) {
                     'hasOne' => $this->generateHasOneMethod($relatedModel),

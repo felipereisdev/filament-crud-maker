@@ -23,20 +23,20 @@
     "prefer-stable": true,
     "require": {
         "php": "^8.3",
-        "filament/filament": "^4.0",
-        "laravel/framework": "^11.28|^12.0",
-        "friendsofphp/php-cs-fixer": "^3.0"
+        "filament/filament": "^4.0|^5.0",
+        "laravel/framework": "^11.28|^12.0|^13.0",
+        "laravel/pint": "^1.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
-        "orchestra/testbench": "^9.0|^10.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
         "pestphp/pest": "^3.0"
     },
     "scripts": {
         "test": "vendor/bin/pest",
         "analyse": "phpstan analyse",
-        "cs-fix": [
-            "php-cs-fixer fix --config=src/config/php-cs-fixer.dist.php.example"
+        "format": [
+            "pint"
         ]
     },
     "extra": {

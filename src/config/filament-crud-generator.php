@@ -37,19 +37,9 @@ return [
     | Auto Formatting
     |--------------------------------------------------------------------------
     |
-    | If true, generated files will be automatically formatted using PHP CS Fixer,
+    | If true, generated files will be automatically formatted using Laravel Pint,
     | unless the --no-format flag is provided.
     |
     */
     'auto_format' => true,
-
-    /*
-    |--------------------------------------------------------------------------
-    | CS Fixer Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Name of the PHP CS Fixer configuration file to use or create.
-    |
-    */
-    'cs_fixer_config_file' => '.php-cs-fixer.dist.php',
 ];
