@@ -140,10 +140,12 @@ class ImportManager
             'use Filament\Tables\Table;',
         ];
 
-        // Combine all imports and remove duplicates
+        // Combine all managed imports and remove duplicates
         $imports = array_merge($requiredImports, $imports);
         $imports = array_unique($imports);
-        sort($imports); // Sort for readability
+
+        // Build the set of managed FQCNs so we can preserve unmanaged imports
+        $managedFqcns = $this->buildManagedFqcnSet($imports);
 
         // Find the position right after the namespace to add imports.
         // The pattern supports sub-namespaces (e.g. App\Filament\Resources\Categories in Filament v5).
@@ -151,7 +153,6 @@ class ImportManager
         if (preg_match($namespacePattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
             $namespaceEndPos = $matches[0][1] + strlen($matches[0][0]);
 
-            // Remove all existing imports between the namespace and the class
             $afterNamespace = substr($content, $namespaceEndPos);
             $classPos = strpos($afterNamespace, 'class '.$model.'Resource');
 
@@ -159,7 +160,14 @@ class ImportManager
                 // Extract only the part between the namespace and the class
                 $importSection = substr($afterNamespace, 0, $classPos);
 
-                // Remove all existing imports
+                // Collect existing imports that are NOT managed by us — these must be preserved
+                $preservedImports = $this->extractUnmanagedImports($importSection, $managedFqcns);
+
+                // Merge preserved + generated imports, deduplicate, sort
+                $imports = array_unique(array_merge($imports, $preservedImports));
+                sort($imports);
+
+                // Remove all existing imports from the section
                 $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
 
                 // Replace the content between the namespace and the class with new imports
@@ -248,7 +256,7 @@ class ImportManager
     }
 
     /**
-     * Inserts imports into the content after the namespace declaration
+     * Inserts imports into the content after the namespace declaration, preserving unmanaged imports
      *
      * @param  array<int, string>  $imports
      */
@@ -262,6 +270,14 @@ class ImportManager
                 $classPos = $classMatches[0][1];
                 $importSection = substr($afterNamespace, 0, $classPos);
 
+                // Build managed FQCN set from the new imports
+                $managedFqcns = $this->buildManagedFqcnSet($imports);
+
+                // Preserve any existing imports not managed by us
+                $preservedImports = $this->extractUnmanagedImports($importSection, $managedFqcns);
+                $imports = array_unique(array_merge($imports, $preservedImports));
+                sort($imports);
+
                 // Remove existing imports
                 $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
 
@@ -272,5 +288,60 @@ class ImportManager
         }
 
         return $content;
+    }
+
+    /**
+     * Builds a set of FQCNs that are managed by the import manager
+     *
+     * @param  array<int, string>  $managedImports
+     * @return array<int, string>
+     */
+    private function buildManagedFqcnSet(array $managedImports): array
+    {
+        $fqcns = [];
+
+        // All FQCNs from IMPORT_MAP are managed
+        foreach (self::IMPORT_MAP as $fqcn) {
+            $fqcns[] = $fqcn;
+        }
+
+        // FQCNs from the managed import statements
+        foreach ($managedImports as $importLine) {
+            if (preg_match('/^use\s+([^;]+);$/', $importLine, $m)) {
+                $fqcns[] = $m[1];
+            }
+        }
+
+        // Additional managed FQCNs
+        $fqcns[] = 'Illuminate\Database\Eloquent\Builder';
+        $fqcns[] = 'Illuminate\Database\Eloquent\SoftDeletingScope';
+        $fqcns[] = 'Filament\Tables\Filters\TrashedFilter';
+        $fqcns[] = 'Filament\Schemas\Schema';
+        $fqcns[] = 'Filament\Tables\Table';
+        $fqcns[] = 'Filament\Resources\Resource';
+
+        return array_unique($fqcns);
+    }
+
+    /**
+     * Extracts import statements from a code section that are not in the managed FQCN set
+     *
+     * @param  array<int, string>  $managedFqcns
+     * @return array<int, string>
+     */
+    private function extractUnmanagedImports(string $section, array $managedFqcns): array
+    {
+        $preserved = [];
+
+        if (preg_match_all('/use\s+([^;]+);/', $section, $matches)) {
+            foreach ($matches[1] as $fqcn) {
+                $fqcn = trim($fqcn);
+                if (! in_array($fqcn, $managedFqcns, true)) {
+                    $preserved[] = 'use '.$fqcn.';';
+                }
+            }
+        }
+
+        return $preserved;
     }
 }

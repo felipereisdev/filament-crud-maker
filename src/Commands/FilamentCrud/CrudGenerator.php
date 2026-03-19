@@ -31,18 +31,10 @@ class CrudGenerator
     ): bool {
         $this->log("Generating CRUD for model {$model}");
 
-        // Process fields - improved to handle complex fields
+        // Process fields - context-aware splitting that respects commas inside validation values
         $fieldArray = [];
-        // Split by comma, but respecting values that contain commas within rules
-        $pattern = '/(?:[^,"]|"(?:\\\\.|[^"\\\\])*")+/';
         if (! empty($fields)) {
-            preg_match_all($pattern, $fields, $matches);
-            $fieldArray = $matches[0];
-
-            // Clean possible extra spaces
-            foreach ($fieldArray as $key => $field) {
-                $fieldArray[$key] = trim($field);
-            }
+            $fieldArray = self::splitFields($fields);
         }
 
         $this->log('Fields to process: '.count($fieldArray));
@@ -81,15 +73,8 @@ class CrudGenerator
                         // Rebuild the fields string after the model
                         $fieldsStr = implode(':', array_slice($parts, 2));
 
-                        // Split by comma, considering possible commas in values
-                        preg_match_all($pattern, $fieldsStr, $fieldMatches);
-                        if (! empty($fieldMatches[0])) {
-                            $relatedFields = $fieldMatches[0];
-                            // Clean possible extra spaces
-                            foreach ($relatedFields as $key => $field) {
-                                $relatedFields[$key] = trim($field);
-                            }
-                        }
+                        // Split by comma, respecting commas inside validation values
+                        $relatedFields = self::splitFields($fieldsStr);
 
                         $relatedFieldsMap[$relatedModel] = $relatedFields;
 
@@ -111,12 +96,32 @@ class CrudGenerator
         // Update the migration with the fields
         $this->migrationManager->updateMigration($model, $fieldArray, $relationArray, $softDeletes);
 
+        // For hasMany/hasOne relations, add the FK column to the related model's migration
+        foreach ($relationArray as $relation) {
+            if (strpos($relation, ':') !== false) {
+                [$relationType, $relatedModel] = explode(':', $relation);
+                if (in_array($relationType, ['hasMany', 'hasOne'])) {
+                    $this->migrationManager->updateMigration($relatedModel, [], ['belongsTo:'.$model]);
+                }
+            }
+        }
+
         // Create the Filament resource
         $this->log('Creating Filament resource for '.$model);
         $this->callMakeFilamentResource($model);
 
         // Update the model with the required fields
         $this->modelManager->updateModel($model, $fieldArray, $relationArray, $softDeletes);
+
+        // Add inverse belongsToMany on related models
+        foreach ($relationArray as $relation) {
+            if (strpos($relation, ':') !== false) {
+                [$relationType, $relatedModel] = explode(':', $relation);
+                if ($relationType === 'belongsToMany') {
+                    $this->modelManager->updateModel($relatedModel, [], ['belongsToMany:'.$model], false);
+                }
+            }
+        }
 
         // Auto-generate foreignId fields from belongsTo relations so the form includes Select components
         foreach ($relationArray as $relation) {
@@ -160,6 +165,60 @@ class CrudGenerator
         $this->log('Filament CRUD for '.$model.' generated successfully!');
 
         return true;
+    }
+
+    /**
+     * Splits a comma-separated fields string, respecting commas inside validation values like between=1,12
+     *
+     * @return array<int, string>
+     */
+    public static function splitFields(string $fields): array
+    {
+        $result = [];
+        $current = '';
+        $inValue = false;
+        $length = strlen($fields);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $fields[$i];
+
+            if ($char === '=' && ! $inValue) {
+                $inValue = true;
+            } elseif ($char === ':' && $inValue) {
+                $inValue = false;
+            } elseif ($char === ',') {
+                if ($inValue) {
+                    // Lookahead: check if the text after this comma starts a new field definition.
+                    // A new field starts with a valid field name (letter/underscore) followed by ':type'.
+                    $remaining = substr($fields, $i + 1);
+                    $nextComma = strpos($remaining, ',');
+                    $nextSegment = $nextComma !== false ? substr($remaining, 0, $nextComma) : $remaining;
+
+                    if (preg_match('/^[a-zA-Z_]\w*:/', $nextSegment)) {
+                        // Next segment starts a new field — split here
+                        $inValue = false;
+                        $result[] = trim($current);
+                        $current = '';
+
+                        continue;
+                    }
+                    // Otherwise the comma is part of the validation value (e.g. between=1,12)
+                } else {
+                    $result[] = trim($current);
+                    $current = '';
+
+                    continue;
+                }
+            }
+
+            $current .= $char;
+        }
+
+        if (trim($current) !== '') {
+            $result[] = trim($current);
+        }
+
+        return $result;
     }
 
     /**

@@ -269,6 +269,111 @@ it('contains DeleteBulkAction in import map', function () {
         ->and($importMap['DeleteBulkAction'])->toBe('Filament\Actions\DeleteBulkAction');
 });
 
+it('preserves BackedEnum import when adding required imports', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources;
+
+use BackedEnum;
+use Filament\Resources\Resource;
+
+class ProductResource extends Resource
+{
+}
+PHP;
+
+    $result = $this->manager->addRequiredImports($content, 'Product', ['TextInput'], false);
+
+    expect($result)
+        ->toContain('use BackedEnum;')
+        ->toContain('use Filament\Forms\Components\TextInput;');
+});
+
+it('preserves Heroicon import when adding required imports', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources;
+
+use Filament\Resources\Resource;
+use Filament\Support\Icons\Heroicon;
+
+class ProductResource extends Resource
+{
+}
+PHP;
+
+    $result = $this->manager->addRequiredImports($content, 'Product', [], false);
+
+    expect($result)->toContain('use Filament\Support\Icons\Heroicon;');
+});
+
+it('preserves Page class imports when adding required imports', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources\Categories;
+
+use App\Filament\Resources\Categories\CategoryResource\Pages\ListCategories;
+use App\Filament\Resources\Categories\CategoryResource\Pages\CreateCategory;
+use Filament\Resources\Resource;
+
+class CategoryResource extends Resource
+{
+}
+PHP;
+
+    $result = $this->manager->addRequiredImports($content, 'Category', [], false);
+
+    expect($result)
+        ->toContain('use App\Filament\Resources\Categories\CategoryResource\Pages\ListCategories;')
+        ->toContain('use App\Filament\Resources\Categories\CategoryResource\Pages\CreateCategory;');
+});
+
+it('preserves unmanaged imports in form file', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources\ProductResource\Schemas;
+
+use BackedEnum;
+use Filament\Schemas\Schema;
+
+class ProductForm
+{
+}
+PHP;
+
+    $result = $this->manager->addFormFileImports($content, ['TextInput']);
+
+    expect($result)
+        ->toContain('use BackedEnum;')
+        ->toContain('use Filament\Forms\Components\TextInput;')
+        ->toContain('use Filament\Schemas\Schema;');
+});
+
+it('preserves unmanaged imports in table file', function () {
+    $content = <<<'PHP'
+<?php
+
+namespace App\Filament\Resources\ProductResource\Tables;
+
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+
+class ProductsTable
+{
+}
+PHP;
+
+    $result = $this->manager->addTableFileImports($content, ['TextColumn'], false);
+
+    expect($result)
+        ->toContain('use Filament\Support\Icons\Heroicon;')
+        ->toContain('use Filament\Tables\Columns\TextColumn;');
+});
+
 it('contains new form components in import map', function (string $component, string $expectedPath) {
     $reflection = new ReflectionClass(ImportManager::class);
     $importMap = $reflection->getConstant('IMPORT_MAP');

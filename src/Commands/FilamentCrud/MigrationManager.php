@@ -247,6 +247,7 @@ class MigrationManager
             'datetime' => 'dateTime',
             'richtext' => 'longText',
             'editor' => 'longText',
+            'decimal' => 'decimal(10, 2)',
         ];
 
         return $typeMap[$type] ?? $type;

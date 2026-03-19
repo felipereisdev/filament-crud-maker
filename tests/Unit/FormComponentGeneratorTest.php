@@ -362,6 +362,35 @@ PHP;
         ->toContain("TextInput::make('name')");
 });
 
+it('inserts fields into form method with Schema signature using $schema variable (Filament v5)', function () {
+    $content = <<<'PHP'
+<?php
+
+class CategoryResource extends Resource
+{
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([]);
+    }
+}
+PHP;
+
+    $fields = [
+        "TextInput::make('name')->required()",
+        "Toggle::make('is_active')",
+    ];
+
+    $validator = new CodeValidator;
+    $result = $this->generator->updateFormMethod($content, $fields, $validator);
+
+    expect($result)
+        ->toContain('$schema')
+        ->not->toContain('$form')
+        ->toContain('->components([')
+        ->toContain("TextInput::make('name')->required()")
+        ->toContain("Toggle::make('is_active')");
+});
+
 it('returns content unchanged when form fields are empty', function () {
     $content = '<?php class Test { public static function form(Form $form): Form { return $form->schema([]); } }';
     $validator = new CodeValidator;

@@ -19,7 +19,7 @@ A Laravel package that generates **complete CRUD resources** for Filament admin 
 - **Built-in validation** — Apply rules like `required`, `min`, `max`, `email`, `unique`, `between`, and more directly in the command
 - **Configurable namespaces** — Customize model and resource namespaces via the published config file
 - **Automatic code formatting** — Generated files are formatted with Laravel Pint (PSR-12)
-- **Filament v4/v5 compatible** — Supports both the separate Schemas/Tables directory structure and inline resources
+- **Filament v4/v5 compatible** — Supports both `form(Form $form)` and `form(Schema $schema)` signatures, separate Schemas/Tables directory structure, and inline resources. Schema and Table files are detected independently
 
 ---
 
@@ -176,7 +176,7 @@ name:string:required:max=100
 |---|---|---|---|
 | `integer` | `TextInput` (numeric, step 1) | `TextColumn` (numeric) | `integer` |
 | `bigInteger` | `TextInput` (numeric, step 1) | `TextColumn` (numeric) | `bigInteger` |
-| `decimal` | `TextInput` (numeric, decimal) | `TextColumn` (numeric/money*) | `decimal` |
+| `decimal` | `TextInput` (numeric, decimal) | `TextColumn` (numeric/money*) | `decimal(10, 2)` |
 | `float` | `TextInput` (numeric, decimal) | `TextColumn` (numeric) | `float` |
 | `double` | `TextInput` (numeric, decimal) | `TextColumn` (numeric) | `double` |
 
@@ -243,7 +243,7 @@ Apply validation rules to fields using the `rule` or `rule=value` syntax after t
 | Required | `required` | `->required()` | Field must be filled |
 | Minimum | `min=N` | `->minLength(N)` or `->minValue(N)` | Min length (text) or min value (numeric) |
 | Maximum | `max=N` | `->maxLength(N)` or `->maxValue(N)` | Max length (text) or max value (numeric). For `string` fields, also sets the column length in the migration: `$table->string('name', N)` |
-| Between | `between=X,Y` | `->minValue(X)->maxValue(Y)` | Value must be between X and Y |
+| Between | `between=X,Y` | `->minValue(X)->maxValue(Y)` | Value must be between X and Y. The comma inside the value is handled correctly and won't split the field |
 | Email | `email` | `->email()` | Must be a valid email address |
 | URL | `url` | `->url()` | Must be a valid URL |
 | Phone | `tel` | `->tel()` | Phone number input |
@@ -278,9 +278,9 @@ You can optionally specify fields for the related model. If the related model do
 | Type | Description | Automatic Actions |
 |---|---|---|
 | `belongsTo` | Many-to-one (e.g. Product belongs to Category) | Adds `foreignId` column + `constrained()->onDelete('cascade')` to migration |
-| `belongsToMany` | Many-to-many (e.g. Course has many Students) | Creates pivot table with foreign keys and unique constraint |
-| `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model |
-| `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model |
+| `belongsToMany` | Many-to-many (e.g. Course has many Students) | Creates pivot table with foreign keys and unique constraint. Also generates the inverse relationship on the related model |
+| `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model. Adds `foreignId` FK column to the related model's migration |
+| `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model. Adds `foreignId` FK column to the related model's migration |
 | `morphTo` | Polymorphic inverse (e.g. Comment belongs to Post or Video) | Adds `$table->morphs('{morphName}')` to migration; the second segment is the morph name |
 | `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method with auto-derived morph name (`{snake(relatedModel)}able`) |
 | `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method with auto-derived morph name (`{snake(relatedModel)}able`) |
@@ -398,7 +398,8 @@ For each model, the generator creates or updates:
 
 - **Fillable fields** — All defined fields are added to the model's `$fillable` array
 - **Type casts** — Boolean, date, datetime, integer, decimal, and JSON fields get proper Eloquent casts
-- **Smart imports** — Only the required Filament component classes are imported, with no duplicates
+- **Smart imports** — Only the required Filament component classes are imported, with no duplicates. Existing imports not managed by the generator (e.g. `BackedEnum`, `Heroicon`, Page classes) are preserved
+- **Relationship return types** — Generated relationship methods include proper return type hints (e.g. `: HasMany`, `: BelongsTo`)
 - **Table filters** — Boolean fields get ternary filters; date/numeric fields get range filters; foreign keys get select filters
 - **Table actions** — Edit action and bulk delete are automatically configured
 - **Code formatting** — All generated files are formatted with Laravel Pint (PSR-12)

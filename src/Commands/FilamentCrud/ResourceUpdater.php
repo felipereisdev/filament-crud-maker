@@ -86,31 +86,51 @@ class ResourceUpdater
         $this->log('Total table columns: '.count($tableColumns));
         $this->log('Total filters: '.count($filterFields));
 
-        // Detect Schemas/Tables directory structure
+        // Detect Schemas/Tables directory structure independently
         $resourceDir = $this->resolveResourceDir($model);
         $schemaPath = $resourceDir !== null ? $resourceDir.'/Schemas/'.$model.'Form.php' : null;
         $tablePath = $resourceDir !== null ? $resourceDir.'/Tables/'.Str::plural($model).'Table.php' : null;
 
-        if (
-            $resourceDir !== null
-            && $schemaPath !== null
-            && $tablePath !== null
-            && File::isDirectory($resourceDir.'/Schemas')
-            && File::isDirectory($resourceDir.'/Tables')
-        ) {
-            $this->log('Separate Schemas/Tables structure detected');
+        $hasSchemaFile = $resourceDir !== null && $schemaPath !== null
+            && File::isDirectory($resourceDir.'/Schemas') && File::exists($schemaPath);
+        $hasTableFile = $resourceDir !== null && $tablePath !== null
+            && File::isDirectory($resourceDir.'/Tables') && File::exists($tablePath);
 
-            return $this->updateV4Structure(
-                $model,
-                $schemaPath,
-                $tablePath,
-                $formFields,
-                $tableColumns,
-                $filterFields,
-                $formComponents,
-                $tableComponents,
-                $softDeletes
-            );
+        if ($hasSchemaFile || $hasTableFile) {
+            $this->log('Separate file structure detected (schema='.($hasSchemaFile ? 'yes' : 'no').', table='.($hasTableFile ? 'yes' : 'no').')');
+
+            // Update schema file if it exists
+            if ($hasSchemaFile && ! empty($formFields)) {
+                $resolvedSchemaPath = (string) $schemaPath;
+                if (! $this->updateSchemaFile($model, $resolvedSchemaPath, $formFields, $formComponents)) {
+                    return false;
+                }
+            }
+
+            // Prepend TrashedFilter so soft-deleted records are filterable
+            if ($softDeletes) {
+                array_unshift($filterFields, 'TrashedFilter::make()');
+            }
+
+            // Update table file if it exists
+            if ($hasTableFile && (! empty($tableColumns) || ! empty($filterFields))) {
+                $resolvedTablePath = (string) $tablePath;
+                if (! $this->updateTableFile($model, $resolvedTablePath, $tableColumns, $filterFields, $tableComponents, $softDeletes)) {
+                    return false;
+                }
+            }
+
+            // For parts without a separate file, fall back to inline in the Resource file
+            if (! $hasSchemaFile || ! $hasTableFile) {
+                $inlineFormFields = $hasSchemaFile ? [] : $formFields;
+                $inlineTableColumns = $hasTableFile ? [] : $tableColumns;
+                $inlineFilterFields = $hasTableFile ? [] : $filterFields;
+                $usedComponents = array_unique(array_merge($formComponents, $tableComponents));
+
+                return $this->updateInlineResource($model, $resourcePath, $inlineFormFields, $inlineTableColumns, $inlineFilterFields, $usedComponents, $softDeletes);
+            }
+
+            return true;
         }
 
         // Fallback: update inline in the Resource file
@@ -203,48 +223,6 @@ class ResourceUpdater
         }
 
         return [$formFields, $tableColumns, $filterFields, $formComponents, $tableComponents];
-    }
-
-    /**
-     * Updates separate Schema and Table files (Filament v4 structure)
-     *
-     * @param  array<int, string>  $formFields
-     * @param  array<int, string>  $tableColumns
-     * @param  array<int, string>  $filterFields
-     * @param  array<int, string>  $formComponents
-     * @param  array<int, string>  $tableComponents
-     */
-    private function updateV4Structure(
-        string $model,
-        string $schemaPath,
-        string $tablePath,
-        array $formFields,
-        array $tableColumns,
-        array $filterFields,
-        array $formComponents,
-        array $tableComponents,
-        bool $softDeletes
-    ): bool {
-        // Update Schema file (form)
-        if (! empty($formFields) && File::exists($schemaPath)) {
-            if (! $this->updateSchemaFile($model, $schemaPath, $formFields, $formComponents)) {
-                return false;
-            }
-        }
-
-        // Prepend TrashedFilter so soft-deleted records are filterable
-        if ($softDeletes) {
-            array_unshift($filterFields, 'TrashedFilter::make()');
-        }
-
-        // Update Table file (columns, filters, actions)
-        if ((! empty($tableColumns) || ! empty($filterFields)) && File::exists($tablePath)) {
-            if (! $this->updateTableFile($model, $tablePath, $tableColumns, $filterFields, $tableComponents, $softDeletes)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**

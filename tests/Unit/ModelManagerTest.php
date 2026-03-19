@@ -110,7 +110,7 @@ it('generates a morphTo method using the morph name as the method name', functio
     File::shouldReceive('exists')->with($modelPath)->andReturn(true);
     File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
-        return str_contains($content, 'public function commentable()')
+        return str_contains($content, 'public function commentable(): \Illuminate\Database\Eloquent\Relations\MorphTo')
             && str_contains($content, '$this->morphTo()');
     });
 
@@ -134,7 +134,7 @@ it('generates a morphOne method with the related-model-derived morph name', func
     File::shouldReceive('exists')->with($modelPath)->andReturn(true);
     File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
-        return str_contains($content, 'public function image()')
+        return str_contains($content, 'public function image(): \Illuminate\Database\Eloquent\Relations\MorphOne')
             && str_contains($content, '$this->morphOne(')
             && str_contains($content, "'imageable'");
     });
@@ -159,7 +159,7 @@ it('generates a morphMany method with the related-model-derived morph name', fun
     File::shouldReceive('exists')->with($modelPath)->andReturn(true);
     File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
-        return str_contains($content, 'public function comments()')
+        return str_contains($content, 'public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany')
             && str_contains($content, '$this->morphMany(')
             && str_contains($content, "'commentable'");
     });
@@ -184,12 +184,132 @@ it('derives morph name from related model for morphMany (Attachment on Transacti
     File::shouldReceive('exists')->with($modelPath)->andReturn(true);
     File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
-        return str_contains($content, 'public function attachments()')
+        return str_contains($content, 'public function attachments(): \Illuminate\Database\Eloquent\Relations\MorphMany')
             && str_contains($content, '$this->morphMany(')
             && str_contains($content, "'attachmentable'");
     });
 
     $this->manager->updateModel('Transaction', [], ['morphMany:Attachment']);
+});
+
+it('generates hasMany method with return type hint', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Budget extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Budget.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function transactions(): \Illuminate\Database\Eloquent\Relations\HasMany');
+    });
+
+    $this->manager->updateModel('Budget', [], ['hasMany:Transaction']);
+});
+
+it('generates belongsTo method with return type hint', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Post extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Post.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo');
+    });
+
+    $this->manager->updateModel('Post', [], ['belongsTo:User']);
+});
+
+it('generates belongsToMany method with return type hint', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Post extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Post.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function tags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany');
+    });
+
+    $this->manager->updateModel('Post', [], ['belongsToMany:Tag']);
+});
+
+it('generates hasOne method with return type hint', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class User extends Model
+        {
+        }
+        PHP;
+
+    $modelPath = app_path('Models/User.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, 'public function profile(): \Illuminate\Database\Eloquent\Relations\HasOne');
+    });
+
+    $this->manager->updateModel('User', [], ['hasOne:Profile']);
+});
+
+it('does not duplicate existing relation methods', function () {
+    $modelContent = <<<'PHP'
+        <?php
+
+        namespace App\Models;
+
+        use Illuminate\Database\Eloquent\Model;
+
+        class Post extends Model
+        {
+            public function tags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+            {
+                return $this->belongsToMany(\App\Models\Tag::class);
+            }
+        }
+        PHP;
+
+    $modelPath = app_path('Models/Post.php');
+    File::shouldReceive('exists')->with($modelPath)->andReturn(true);
+    File::shouldReceive('get')->with($modelPath)->andReturn($modelContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        // Should appear exactly once
+        return substr_count($content, 'function tags(') === 1;
+    });
+
+    $this->manager->updateModel('Post', [], ['belongsToMany:Tag']);
 });
 
 it('does not duplicate existing fillable entries', function () {

@@ -256,6 +256,21 @@ it('generates pivot table for belongsToMany relation with alphabetical column or
     $this->manager->updateMigration('Post', [], ['belongsToMany:Tag']);
 });
 
+// --- Decimal precision ---
+
+it('maps decimal field to $table->decimal() with explicit precision', function () {
+    $migrationContent = migrationStub();
+    $migrationFile = database_path('migrations/2024_01_01_000000_create_posts_table.php');
+
+    File::shouldReceive('glob')->andReturn([$migrationFile]);
+    File::shouldReceive('get')->with($migrationFile)->andReturn($migrationContent);
+    File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
+        return str_contains($content, "\$table->decimal('amount', 10, 2)");
+    });
+
+    $this->manager->updateMigration('Post', ['amount:decimal']);
+});
+
 // --- Error handling ---
 
 it('returns false when migration file is not found', function () {

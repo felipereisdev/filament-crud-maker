@@ -175,16 +175,34 @@ class ModelManager
             }
         }
 
-        // Add relationship methods
+        // Add relationship methods (skipping duplicates)
         if (! empty($relations)) {
             $relationMethods = $this->generateRelationMethods($relations, $model);
 
-            // Check if the model already has relationship methods
             if (! empty($relationMethods)) {
-                // Find the end of the class to add the methods
-                $endClassPos = strrpos($content, '}');
-                if ($endClassPos !== false) {
-                    $content = substr_replace($content, $relationMethods."\n}", $endClassPos, 1);
+                // Filter out methods that already exist in the content
+                $filteredMethods = '';
+                $methodBlocks = preg_split('/(?=\n    public function )/', $relationMethods);
+                if ($methodBlocks !== false) {
+                    foreach ($methodBlocks as $block) {
+                        if (trim($block) === '') {
+                            continue;
+                        }
+                        // Extract method name from the block
+                        if (preg_match('/function\s+(\w+)\s*\(/', $block, $m)) {
+                            // Only add if the method doesn't already exist
+                            if (! str_contains($content, 'function '.$m[1].'(')) {
+                                $filteredMethods .= $block;
+                            }
+                        }
+                    }
+                }
+
+                if (! empty($filteredMethods)) {
+                    $endClassPos = strrpos($content, '}');
+                    if ($endClassPos !== false) {
+                        $content = substr_replace($content, $filteredMethods."\n}", $endClassPos, 1);
+                    }
                 }
             }
         }
@@ -249,7 +267,7 @@ class ModelManager
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return \$this->hasOne(\\{$namespace}\\{$relatedModel}::class);
     }
@@ -263,7 +281,7 @@ PHP;
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return \$this->hasMany(\\{$namespace}\\{$relatedModel}::class);
     }
@@ -277,7 +295,7 @@ PHP;
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return \$this->belongsTo(\\{$namespace}\\{$relatedModel}::class);
     }
@@ -291,7 +309,7 @@ PHP;
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return \$this->belongsToMany(\\{$namespace}\\{$relatedModel}::class);
     }
@@ -307,7 +325,7 @@ PHP;
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\MorphTo
     {
         return \$this->morphTo();
     }
@@ -325,7 +343,7 @@ PHP;
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\MorphOne
     {
         return \$this->morphOne(\\{$namespace}\\{$relatedModel}::class, '{$morphName}');
     }
@@ -343,7 +361,7 @@ PHP;
 
         return <<<PHP
 
-    public function {$relationName}()
+    public function {$relationName}(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return \$this->morphMany(\\{$namespace}\\{$relatedModel}::class, '{$morphName}');
     }
