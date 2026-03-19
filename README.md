@@ -1,4 +1,4 @@
-# Filament CRUD Generator
+# Filament CRUD Maker
 
 [![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white)](https://php.net)
 [![Laravel 11/12/13](https://img.shields.io/badge/Laravel-11%20%7C%2012%20%7C%2013-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
