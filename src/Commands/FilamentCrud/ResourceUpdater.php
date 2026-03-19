@@ -44,7 +44,7 @@ class ResourceUpdater
         $tablePath = $resourceDir . '/Tables/' . $model . 'sTable.php';
 
         if (File::isDirectory($resourceDir . '/Schemas') && File::isDirectory($resourceDir . '/Tables')) {
-            $this->log('V4 structure detected (Schemas/ + Tables/)');
+            $this->log('Separate Schemas/Tables structure detected');
 
             return $this->updateV4Structure(
                 $model,

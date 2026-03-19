@@ -219,6 +219,12 @@ class MigrationManager
             'image' => 'string',
             'color' => 'string',
             'file' => 'string',
+            'code' => 'longText',
+            'slider' => 'integer',
+            'range' => 'integer',
+            'toggleButtons' => 'string',
+            'keyvalue' => 'json',
+            'checkbox' => 'boolean',
         ];
 
         return $typeMap[$type] ?? $type;

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Laravel PHP package (`freis/filament-crud-generator`) that generates complete CRUD resources for Filament v4 admin panels. It creates Models, Migrations, and Filament Resources with customizable fields, validations, and relationships via a single Artisan command.
+Laravel PHP package (`freis/filament-crud-generator`) that generates complete CRUD resources for Filament v4/v5 admin panels. It creates Models, Migrations, and Filament Resources with customizable fields, validations, and relationships via a single Artisan command.
 
 Documentation and code are in English.
 
@@ -51,7 +51,7 @@ The package follows a Command + Manager pattern with single-responsibility class
 
 ## Key Dependencies
 
-- **PHP ^8.3**, **Laravel ^11.28|^12**, **Filament ^4.0**
+- **PHP ^8.3**, **Laravel ^11.28|^12/^13**, **Filament ^4.0/^5.0**
 - **PHP-CS-Fixer ^3.0** for code formatting
 - **Pest ^3.0** for testing
 - **Larastan ^3.0** (PHPStan + Laravel) for static analysis at level 9

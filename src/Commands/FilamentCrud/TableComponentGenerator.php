@@ -13,14 +13,18 @@ class TableComponentGenerator
     {
         $column = match ($fieldType) {
             'string', 'text' => "TextColumn::make('{$fieldName}')",
-            'textarea', 'longtext', 'markdown', 'richtext', 'editor' => "TextColumn::make('{$fieldName}')"
+            'textarea', 'longtext', 'markdown', 'richtext', 'editor', 'code', 'json', 'keyvalue' => "TextColumn::make('{$fieldName}')"
                 . "->limit(50)"
                 . "->tooltip(function (\$state): ?string {
                            return strlen(\$state) > 50 ? \$state : null;
                          })",
             'enum' => "TextColumn::make('{$fieldName}')"
                 . "->badge()",
-            'boolean' => "ToggleColumn::make('{$fieldName}')",
+            'boolean', 'checkbox' => "ToggleColumn::make('{$fieldName}')",
+            'slider', 'range' => "TextColumn::make('{$fieldName}')"
+                . "->numeric()",
+            'toggleButtons' => "TextColumn::make('{$fieldName}')"
+                . "->badge()",
             'date' => "TextColumn::make('{$fieldName}')"
                 . "->date()",
             'datetime' => "TextColumn::make('{$fieldName}')"
@@ -60,7 +64,8 @@ class TableComponentGenerator
     public function generateFilter(string $fieldName, string $fieldType, array $validationRules = []): ?string
     {
         $filter = match ($fieldType) {
-            'boolean' => "TernaryFilter::make('{$fieldName}')",
+            'boolean', 'checkbox' => "TernaryFilter::make('{$fieldName}')",
+            'toggleButtons' => "SelectFilter::make('{$fieldName}')",
             'foreignId' => "SelectFilter::make('{$fieldName}')"
                 . "->relationship('" . str_replace('_id', '', $fieldName) . "', 'name')",
             'select', 'enum' => "SelectFilter::make('{$fieldName}')",
@@ -82,7 +87,7 @@ class TableComponentGenerator
                                     fn (Builder \$query, \$date): Builder => \$query->whereDate('{$fieldName}', '<=', \$date),
                                 );
                         })",
-            'decimal', 'float', 'double', 'integer', 'bigInteger' => "Filter::make('{$fieldName}')"
+            'decimal', 'float', 'double', 'integer', 'bigInteger', 'slider', 'range' => "Filter::make('{$fieldName}')"
                 . "->form(["
                 . "TextInput::make('{$fieldName}_from')"
                 . "->label('Minimum value')"
@@ -120,18 +125,19 @@ class TableComponentGenerator
     {
         if ($context === 'column') {
             return match ($fieldType) {
-                'boolean' => 'ToggleColumn',
+                'boolean', 'checkbox' => 'ToggleColumn',
                 'image' => 'ImageColumn',
                 'color' => 'ColorColumn',
                 'icon' => 'IconColumn',
-                'enum', 'tags' => 'TextColumn',
+                'enum', 'tags', 'toggleButtons' => 'TextColumn',
+                'code', 'json', 'keyvalue', 'slider', 'range' => 'TextColumn',
                 default => 'TextColumn',
             };
         } elseif ($context === 'filter') {
             return match ($fieldType) {
-                'boolean' => 'TernaryFilter',
-                'select', 'enum', 'foreignId', 'status', 'type', 'category' => 'SelectFilter',
-                'date', 'datetime', 'time', 'decimal', 'float', 'double', 'integer', 'bigInteger' => 'Filter',
+                'boolean', 'checkbox' => 'TernaryFilter',
+                'select', 'enum', 'foreignId', 'status', 'type', 'category', 'toggleButtons' => 'SelectFilter',
+                'date', 'datetime', 'time', 'decimal', 'float', 'double', 'integer', 'bigInteger', 'slider', 'range' => 'Filter',
                 default => '',
             };
         }
