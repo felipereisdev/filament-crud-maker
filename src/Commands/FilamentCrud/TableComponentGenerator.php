@@ -22,7 +22,7 @@ class TableComponentGenerator
                 .'->tooltip(function ($state): ?string {
                            return strlen($state) > 50 ? $state : null;
                          })',
-            'select', 'enum' => "TextColumn::make('{$fieldName}')"
+            'select', 'enum', 'radio' => "TextColumn::make('{$fieldName}')"
                 .'->badge()',
             'boolean', 'checkbox' => "ToggleColumn::make('{$fieldName}')",
             'slider', 'range' => "TextColumn::make('{$fieldName}')"
@@ -51,7 +51,7 @@ class TableComponentGenerator
         };
 
         // Add common properties for columns
-        if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'select', 'enum', 'email', 'url'])) {
+        if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'select', 'enum', 'radio', 'email', 'url'])) {
             $column .= '->searchable()->sortable()';
         } elseif (in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double', 'date', 'datetime', 'time'])) {
             $column .= '->sortable()';
@@ -69,7 +69,7 @@ class TableComponentGenerator
     {
         $filter = match ($fieldType) {
             'boolean', 'checkbox' => "TernaryFilter::make('{$fieldName}')",
-            'toggleButtons' => "SelectFilter::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
+            'toggleButtons', 'radio' => "SelectFilter::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
             'foreignId' => "SelectFilter::make('{$fieldName}')"
                 ."->relationship('".str_replace('_id', '', $fieldName)."', 'name')",
             'select', 'enum' => "SelectFilter::make('{$fieldName}')->options([ /* TODO: add your options here */ ])",
@@ -126,7 +126,7 @@ class TableComponentGenerator
     /**
      * Returns the table component type based on the field type
      */
-    public function getComponentType(string $fieldType, string $context = 'column'): string
+    public function getComponentType(string $fieldType, string $context = 'column', string $fieldName = ''): string
     {
         if ($context === 'column') {
             return match ($fieldType) {
@@ -134,19 +134,28 @@ class TableComponentGenerator
                 'image' => 'ImageColumn',
                 'color' => 'ColorColumn',
                 'icon' => 'IconColumn',
-                'enum', 'tags', 'toggleButtons' => 'TextColumn',
+                'enum', 'tags', 'toggleButtons', 'radio' => 'TextColumn',
                 'code', 'json', 'keyvalue', 'slider', 'range' => 'TextColumn',
                 'belongsToMany' => '',
                 default => 'TextColumn',
             };
         } elseif ($context === 'filter') {
-            return match ($fieldType) {
+            $baseType = match ($fieldType) {
                 'boolean', 'checkbox' => 'TernaryFilter',
-                'select', 'enum', 'foreignId', 'status', 'type', 'category', 'toggleButtons' => 'SelectFilter',
+                'select', 'enum', 'foreignId', 'toggleButtons', 'radio' => 'SelectFilter',
                 'date', 'datetime', 'time', 'decimal', 'float', 'double', 'integer', 'bigInteger', 'slider', 'range' => 'Filter',
                 'belongsToMany' => '',
                 default => '',
             };
+
+            // String/text fields with status/type/category names generate SelectFilter
+            if ($baseType === '' && in_array($fieldType, ['string', 'text', 'textarea', 'longtext'])) {
+                if (str_contains($fieldName, 'status') || str_contains($fieldName, 'type') || str_contains($fieldName, 'tipo') || str_contains($fieldName, 'category') || str_contains($fieldName, 'categoria')) {
+                    return 'SelectFilter';
+                }
+            }
+
+            return $baseType;
         }
 
         return '';

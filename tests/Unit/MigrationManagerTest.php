@@ -351,7 +351,7 @@ it('createAlterMigration generates correct file content', function () {
     File::shouldReceive('put')->once()->withArgs(function (string $path, string $content) {
         return str_contains($path, '_add_budget_id_to_transactions_table.php')
             && str_contains($content, "Schema::table('transactions'")
-            && str_contains($content, "\$table->foreignId('budget_id')->constrained()->onDelete('cascade')")
+            && str_contains($content, "\$table->foreignId('budget_id')->nullable()->constrained()->onDelete('cascade')")
             && str_contains($content, "\$table->dropForeign(['budget_id'])")
             && str_contains($content, "\$table->dropColumn('budget_id')");
     });

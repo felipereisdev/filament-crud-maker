@@ -205,7 +205,7 @@ name:string:required:max=100
 | `enum` | `Select` (with `->options([ /* TODO */ ])`) | `TextColumn` (badge) | `string` |
 | `foreignId` | `Select` (with `->relationship()`) | `TextColumn` (relationship) | `foreignId` |
 | `checkboxes` | `CheckboxList` (with `->options([ /* TODO */ ])`) | `TextColumn` | `json` |
-| `radio` | `Radio` (with `->options([ /* TODO */ ])`) | `TextColumn` | `string` |
+| `radio` | `Radio` (with `->options([ /* TODO */ ])`) | `TextColumn` (badge, searchable, sortable) | `string` |
 | `toggleButtons` | `ToggleButtons` (with `->options([ /* TODO */ ])`) | `TextColumn` (badge) | `string` |
 
 ### File & Media
@@ -279,8 +279,8 @@ You can optionally specify fields for the related model. If the related model do
 |---|---|---|
 | `belongsTo` | Many-to-one (e.g. Product belongs to Category) | Adds `foreignId` column + `constrained()->onDelete('cascade')` to migration |
 | `belongsToMany` | Many-to-many (e.g. Course has many Students) | Creates pivot table with foreign keys and unique constraint. Generates `Select::make()->multiple()->relationship()` in the form. Also generates the inverse relationship on the related model |
-| `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model. Automatically adds `foreignId` + `constrained()` FK column to the related model's migration (uses a separate alter migration when the target table already exists or has custom fields to avoid FK ordering issues) |
-| `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model. Automatically adds `foreignId` + `constrained()` FK column to the related model's migration (uses a separate alter migration when the target table already exists or has custom fields to avoid FK ordering issues) |
+| `hasOne` | One-to-one (e.g. User has one Profile) | Adds relationship method to model. Automatically adds `foreignId` + `constrained()` FK column to the related model's migration (uses a separate alter migration when the target table already exists or has custom fields to avoid FK ordering issues). Alter migrations generate the FK column as **nullable** for safety with existing data. Also updates the related model's `$fillable` array and adds the inverse `belongsTo` relationship method |
+| `hasMany` | One-to-many (e.g. Course has many Lessons) | Adds relationship method to model. Automatically adds `foreignId` + `constrained()` FK column to the related model's migration (uses a separate alter migration when the target table already exists or has custom fields to avoid FK ordering issues). Alter migrations generate the FK column as **nullable** for safety with existing data. Also updates the related model's `$fillable` array and adds the inverse `belongsTo` relationship method |
 | `morphTo` | Polymorphic inverse (e.g. Comment belongs to Post or Video) | Adds `$table->morphs('{morphName}')` to migration; the second segment is the morph name |
 | `morphOne` | Polymorphic one-to-one (e.g. Post has one Image) | Adds relationship method. Morph name can be explicit (`morphOne:Attachment:attachable`) or auto-derived (`{snake(relatedModel)}able`) |
 | `morphMany` | Polymorphic one-to-many (e.g. Post has many Comments) | Adds relationship method. Morph name can be explicit (`morphMany:Attachment:attachable`) or auto-derived (`{snake(relatedModel)}able`) |

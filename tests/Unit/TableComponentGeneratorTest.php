@@ -182,6 +182,14 @@ it('generates ToggleColumn for checkbox type', function () {
     expect($result)->toContain("ToggleColumn::make('agreed')");
 });
 
+it('generates TextColumn with badge and searchable for radio type', function () {
+    $result = $this->generator->generateColumn('priority', 'radio');
+    expect($result)
+        ->toContain("TextColumn::make('priority')")
+        ->toContain('->badge()')
+        ->toContain('->searchable()->sortable()');
+});
+
 // --- belongsToMany ---
 
 it('returns empty string for belongsToMany column', function () {
@@ -388,6 +396,13 @@ it('generates numeric range Filter for range type', function () {
         ->toContain('TextInput::make');
 });
 
+it('generates SelectFilter with options for radio type', function () {
+    $result = $this->generator->generateFilter('priority', 'radio');
+    expect($result)
+        ->toContain("SelectFilter::make('priority')")
+        ->toContain('->options([ /* TODO: add your options here */ ])');
+});
+
 it('returns null for code type filter', function () {
     $result = $this->generator->generateFilter('snippet', 'code');
     expect($result)->toBeNull();
@@ -424,6 +439,7 @@ it('returns correct column component type', function (string $fieldType, string 
     ['slider', 'TextColumn'],
     ['range', 'TextColumn'],
     ['toggleButtons', 'TextColumn'],
+    ['radio', 'TextColumn'],
     ['belongsToMany', ''],
 ]);
 
@@ -451,12 +467,31 @@ it('returns correct filter component type', function (string $fieldType, string 
     ['range', 'Filter'],
     ['checkbox', 'TernaryFilter'],
     ['toggleButtons', 'SelectFilter'],
+    ['radio', 'SelectFilter'],
     ['belongsToMany', ''],
     ['code', ''],
     ['json', ''],
     ['keyvalue', ''],
     ['string', ''],
 ]);
+
+// --- getComponentType() name-based filter for string fields ---
+
+it('returns SelectFilter for string field named status via getComponentType', function () {
+    expect($this->generator->getComponentType('string', 'filter', 'status'))->toBe('SelectFilter');
+});
+
+it('returns SelectFilter for string field named type via getComponentType', function () {
+    expect($this->generator->getComponentType('string', 'filter', 'type'))->toBe('SelectFilter');
+});
+
+it('returns SelectFilter for string field named category via getComponentType', function () {
+    expect($this->generator->getComponentType('string', 'filter', 'category'))->toBe('SelectFilter');
+});
+
+it('returns empty string for regular string field via getComponentType', function () {
+    expect($this->generator->getComponentType('string', 'filter', 'name'))->toBe('');
+});
 
 // --- updateTableMethod() ---
 

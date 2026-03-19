@@ -220,7 +220,7 @@ class ResourceUpdater
             $filter = $this->tableGenerator->generateFilter($fieldName, $fieldType, $validationRules);
             if ($filter) {
                 $filterFields[] = $filter;
-                $componentType = $this->tableGenerator->getComponentType($fieldType, 'filter');
+                $componentType = $this->tableGenerator->getComponentType($fieldType, 'filter', $fieldName);
                 if ($componentType) {
                     $tableComponents[] = $componentType;
                 }

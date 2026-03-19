@@ -281,7 +281,7 @@ class MigrationManager
             public function up(): void
             {
                 Schema::table('{$tableName}', function (Blueprint \$table) {
-                    \$table->foreignId('{$fkColumn}')->constrained()->onDelete('cascade');
+                    \$table->foreignId('{$fkColumn}')->nullable()->constrained()->onDelete('cascade');
                 });
             }
 

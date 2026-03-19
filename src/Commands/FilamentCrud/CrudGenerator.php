@@ -139,6 +139,8 @@ class CrudGenerator
                     } else {
                         $this->migrationManager->updateMigration($relatedModel, [], ['belongsTo:'.$model]);
                     }
+                    // Update the related model to add FK to $fillable and belongsTo relationship
+                    $this->modelManager->updateModel($relatedModel, [], ['belongsTo:'.$model], false);
                 }
             }
         }
