@@ -90,10 +90,7 @@ class CodeFormatter
         $configFileNew = base_path('.php-cs-fixer.dist.php');
         $configFileExample = base_path('.php-cs-fixer.dist.php.example');
 
-        // First check if the example file exists, and create it if not
-        if (! file_exists($configFileExample)) {
-            $this->log('Creating PHP CS Fixer example configuration...');
-            $phpCsFixerConfig = <<<'PHP'
+        $phpCsFixerConfig = <<<'PHP'
 <?php
 
 $finder = PhpCsFixer\Finder::create()
@@ -139,6 +136,10 @@ return $config->setRules([
     ])
     ->setFinder($finder);
 PHP;
+
+        // First check if the example file exists, and create it if not
+        if (! file_exists($configFileExample)) {
+            $this->log('Creating PHP CS Fixer example configuration...');
             File::put($configFileExample, $phpCsFixerConfig);
             $this->log('.php-cs-fixer.dist.php.example file created!');
         }
@@ -168,7 +169,7 @@ PHP;
     /**
      * Executes a system command and returns the result
      */
-    private function executeCommand(string $command, bool $returnOutput = false)
+    private function executeCommand(string $command, bool $returnOutput = false): string|bool|null
     {
         $this->log("Running: {$command}");
 

@@ -48,6 +48,9 @@ class ModelManager
 
     /**
      * Updates the model with relationships and required properties
+     *
+     * @param array<int, string> $fields
+     * @param array<int, string> $relations
      */
     public function updateModel(string $model, array $fields, array $relations, bool $softDeletes = false): bool
     {
@@ -79,6 +82,9 @@ class ModelManager
             $pattern = '/class\s+' . $model . '\s+extends\s+Model\s*\{/';
             $replacement = "class {$model} extends Model\n{\n    use SoftDeletes;\n";
             $content = preg_replace($pattern, $replacement, $content);
+            if ($content === null) {
+                return false;
+            }
         }
 
         // Add fillable properties based on fields
@@ -167,6 +173,8 @@ class ModelManager
 
     /**
      * Generates relationship methods based on the relations
+     *
+     * @param array<int, string> $relations
      */
     private function generateRelationMethods(array $relations): string
     {

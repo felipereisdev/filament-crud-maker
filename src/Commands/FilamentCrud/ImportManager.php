@@ -64,6 +64,8 @@ class ImportManager
 
     /**
      * Adds required imports based on the components used
+     *
+     * @param array<int, string> $usedComponents
      */
     public function addRequiredImports(string $content, string $model, array $usedComponents, bool $softDeletes): string
     {
