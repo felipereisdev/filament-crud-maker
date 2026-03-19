@@ -33,16 +33,16 @@ A Laravel package that generates **complete CRUD resources** for Filament admin 
 Install the package via Composer:
 
 ```bash
-composer require freis/filament-resource-generator
+composer require freis/filament-crud-maker
 ```
 
 The service provider is auto-discovered. Optionally, publish the configuration file:
 
 ```bash
-php artisan vendor:publish --tag="filament-resource-generator-config"
+php artisan vendor:publish --tag="filament-crud-maker-config"
 ```
 
-This publishes `config/filament-resource-generator.php` where you can customize namespaces, auto-migration, and auto-formatting behavior.
+This publishes `config/filament-crud-maker.php` where you can customize namespaces, auto-migration, and auto-formatting behavior.
 
 You can also publish the Laravel Pint configuration:
 
@@ -307,7 +307,7 @@ php artisan make:filament-crud Setting \
 
 ## Configuration
 
-After publishing, the config file is located at `config/filament-resource-generator.php`:
+After publishing, the config file is located at `config/filament-crud-maker.php`:
 
 ```php
 return [
@@ -377,8 +377,8 @@ php artisan make:filament-crud --clean-resources
 ### Setup
 
 ```bash
-git clone https://github.com/felipereisdev/filament-resource-generator.git
-cd filament-resource-generator
+git clone https://github.com/felipereisdev/filament-crud-maker.git
+cd filament-crud-maker
 composer install
 ```
 
