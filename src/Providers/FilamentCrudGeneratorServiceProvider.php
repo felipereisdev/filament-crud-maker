@@ -13,8 +13,8 @@ class FilamentCrudGeneratorServiceProvider extends ServiceProvider
     {
         // Publish the configuration file
         $this->publishes([
-            __DIR__.'/../config/filament-crud-generator.php' => config_path('filament-crud-generator.php'),
-        ], 'filament-crud-generator-config');
+            __DIR__.'/../config/filament-resource-generator.php' => config_path('filament-resource-generator.php'),
+        ], 'filament-resource-generator-config');
 
         // Publish the Laravel Pint configuration file
         $this->publishes([
@@ -33,8 +33,8 @@ class FilamentCrudGeneratorServiceProvider extends ServiceProvider
     {
         // Merge configurations
         $this->mergeConfigFrom(
-            __DIR__.'/../config/filament-crud-generator.php',
-            'filament-crud-generator'
+            __DIR__.'/../config/filament-resource-generator.php',
+            'filament-resource-generator'
         );
     }
 }
