@@ -50,17 +50,19 @@ class MakeFilamentCrud extends Command
 
         // Check if the model was provided
         $model = $this->argument('model');
-        if (empty($model)) {
+        if (! is_string($model) || empty($model)) {
             $this->error('You must provide a model name.');
 
             return 1;
         }
 
-        $fields = $this->option('fields') ?? '';
-        $relations = $this->option('relations') ?? '';
-        $softDeletes = $this->option('softDeletes') ?? false;
-        $skipMigrations = $this->option('no-migrate') ?? false;
-        $skipCsFixer = $this->option('no-format') ?? false;
+        $fieldsOption = $this->option('fields');
+        $relationsOption = $this->option('relations');
+        $fields = is_string($fieldsOption) ? $fieldsOption : '';
+        $relations = is_string($relationsOption) ? $relationsOption : '';
+        $softDeletes = (bool) $this->option('softDeletes');
+        $skipMigrations = (bool) $this->option('no-migrate');
+        $skipCsFixer = (bool) $this->option('no-format');
 
         // Debug information
         $this->info('=== INPUT INFORMATION ===');

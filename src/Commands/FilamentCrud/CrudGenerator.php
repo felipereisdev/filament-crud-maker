@@ -32,9 +32,9 @@ class CrudGenerator
 
         // Process fields - improved to handle complex fields
         $fieldArray = [];
+        // Split by comma, but respecting values that contain commas within rules
+        $pattern = '/(?:[^,"]|"(?:\\\\.|[^"\\\\])*")+/';
         if (! empty($fields)) {
-            // Split by comma, but respecting values that contain commas within rules
-            $pattern = '/(?:[^,"]|"(?:\\\\.|[^"\\\\])*")+/';
             preg_match_all($pattern, $fields, $matches);
             $fieldArray = $matches[0];
 
@@ -145,6 +145,9 @@ class CrudGenerator
 
     /**
      * Creates related models
+     *
+     * @param array<int, string> $relationArray
+     * @param array<string, array<int, string>> $relatedFieldsMap
      */
     private function createRelatedModels(array $relationArray, string $mainModel, array $relatedFieldsMap, bool $softDeletes): void
     {
@@ -191,6 +194,9 @@ class CrudGenerator
 
     /**
      * Creates Filament resources for related models
+     *
+     * @param array<int, string> $relationArray
+     * @param array<string, array<int, string>> $relatedFieldsMap
      */
     private function createRelatedResources(array $relationArray, array $relatedFieldsMap): void
     {

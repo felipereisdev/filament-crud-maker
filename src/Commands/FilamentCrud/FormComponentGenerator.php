@@ -6,6 +6,8 @@ class FormComponentGenerator
 {
     /**
      * Generates a form component based on the field type
+     *
+     * @param array<string, string> $validationRules
      */
     public function generate(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
@@ -112,6 +114,8 @@ class FormComponentGenerator
 
     /**
      * Updates the form method with the generated fields
+     *
+     * @param array<int, string> $formFields
      */
     public function updateFormMethod(string $content, array $formFields, CodeValidator $validator): string
     {
@@ -122,6 +126,9 @@ class FormComponentGenerator
         if (preg_match('/public\s+(?:static\s+)?function\s+(?:form\s*\(\s*Form\s+\$form\s*\)|configure\s*\(\s*Schema\s+\$schema\s*\))\s*:.*?\{/s', $content, $formMatches, PREG_OFFSET_CAPTURE)) {
             $formStartPos = $formMatches[0][1];
             $openBracePos = strpos($content, '{', $formStartPos);
+            if ($openBracePos === false) {
+                return $content;
+            }
             $closeBracePos = $validator->findMatchingCloseBrace($content, $openBracePos);
 
             if ($closeBracePos !== false) {
