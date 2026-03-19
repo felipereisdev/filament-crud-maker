@@ -36,7 +36,7 @@ class MakeFilamentCrud extends Command
      *
      * @var string
      */
-    protected $description = 'Gera um CRUD completo no Filament v3';
+    protected $description = 'Gera um CRUD completo no Filament v4';
 
     /**
      * Execute the console command.

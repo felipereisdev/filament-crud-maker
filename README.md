@@ -1,6 +1,6 @@
-# Gerador de CRUD para Filament v3
+# Gerador de CRUD para Filament v4
 
-Um pacote Laravel que gera rapidamente recursos CRUD completos para o Filament v3, economizando tempo de desenvolvimento.
+Um pacote Laravel que gera rapidamente recursos CRUD completos para o Filament v4, economizando tempo de desenvolvimento.
 
 ## Instalação
 
