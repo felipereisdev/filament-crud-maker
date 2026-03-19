@@ -5,7 +5,7 @@ namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 class ImportManager
 {
     /**
-     * Mapeamento de componentes para importações completas
+     * Mapping of components to full import paths
      *
      * @var array<string, string>
      */
@@ -38,7 +38,7 @@ class ImportManager
     ];
 
     /**
-     * Remove importações duplicadas do código
+     * Removes duplicate imports from the code
      */
     public function removeDuplicateImports(string $content): string
     {
@@ -53,7 +53,7 @@ class ImportManager
                     $seenImports[] = $import;
                     $result[] = $line;
                 }
-                // Ignoramos importações duplicadas
+                // We ignore duplicate imports
             } else {
                 $result[] = $line;
             }
@@ -63,14 +63,14 @@ class ImportManager
     }
 
     /**
-     * Adiciona importações necessárias com base nos componentes usados
+     * Adds required imports based on the components used
      */
     public function addRequiredImports(string $content, string $model, array $usedComponents, bool $softDeletes): string
     {
-        // Verificar se Builder está sendo usado no código
+        // Check if Builder is being used in the code
         $needsBuilder = preg_match('/function\s*\(\s*Builder|\(\s*Builder\s*\$|\:\s*Builder|use\s+function.*?Builder|fn\s*\(\s*Builder/', $content);
 
-        // Verificar se DatePicker é usado em filtros
+        // Check if DatePicker is used in filters
         $needsDatePicker = false;
         if (in_array('Filter', $usedComponents) && (
             strpos($content, 'DatePicker::make') !== false ||
@@ -80,7 +80,7 @@ class ImportManager
             $usedComponents[] = 'DatePicker';
         }
 
-        // Verificar se TextInput é usado em filtros numéricos
+        // Check if TextInput is used in numeric filters
         $needsTextInput = false;
         if (in_array('Filter', $usedComponents) && (
             preg_match('/numeric|integer|decimal|float|double/', $content) ||
@@ -95,7 +95,7 @@ class ImportManager
         $usedComponents[] = 'BulkActionGroup';
         $usedComponents[] = 'DeleteBulkAction';
 
-        // Gerar importações para os componentes usados
+        // Generate imports for the used components
         $imports = [];
         foreach ($usedComponents as $component) {
             if (isset(self::IMPORT_MAP[$component])) {
@@ -103,18 +103,18 @@ class ImportManager
             }
         }
 
-        // Adicionar importação do Builder se necessário
+        // Add Builder import if needed
         if ($needsBuilder) {
             $imports[] = 'use Illuminate\Database\Eloquent\Builder;';
         }
 
-        // Adicionar SoftDeletingScope e TrashedFilter se softDeletes for true
+        // Add SoftDeletingScope and TrashedFilter if softDeletes is true
         if ($softDeletes) {
             $imports[] = 'use Illuminate\Database\Eloquent\SoftDeletingScope;';
             $imports[] = 'use Filament\Tables\Filters\TrashedFilter;';
         }
 
-        // Adicionar importações padrão necessárias para qualquer recurso Filament
+        // Add default imports required for any Filament resource
         $requiredImports = [
             'use App\Filament\Resources\\' . $model . 'Resource\Pages;',
             'use App\Filament\Resources\\' . $model . 'Resource\RelationManagers;',
@@ -124,28 +124,28 @@ class ImportManager
             'use Filament\Tables\Table;',
         ];
 
-        // Combinar todas as importações e remover duplicatas
+        // Combine all imports and remove duplicates
         $imports = array_merge($requiredImports, $imports);
         $imports = array_unique($imports);
-        sort($imports); // Ordenar para facilitar a leitura
+        sort($imports); // Sort for readability
 
-        // Encontrar a posição logo após o namespace para adicionar as importações
+        // Find the position right after the namespace to add imports
         $namespacePattern = '/namespace\s+App\\\\Filament\\\\Resources;/';
         if (preg_match($namespacePattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
             $namespaceEndPos = $matches[0][1] + strlen($matches[0][0]);
 
-            // Remover todas as importações existentes entre o namespace e a classe
+            // Remove all existing imports between the namespace and the class
             $afterNamespace = substr($content, $namespaceEndPos);
             $classPos = strpos($afterNamespace, 'class ' . $model . 'Resource');
 
             if ($classPos !== false) {
-                // Extrair apenas a parte entre o namespace e a classe
+                // Extract only the part between the namespace and the class
                 $importSection = substr($afterNamespace, 0, $classPos);
 
-                // Remover todas as importações existentes
+                // Remove all existing imports
                 $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
 
-                // Substituir o conteúdo entre o namespace e a classe por novas importações
+                // Replace the content between the namespace and the class with new imports
                 $importString = "\n\n" . implode("\n", $imports) . "\n\n";
                 $content = substr($content, 0, $namespaceEndPos) . $importString .
                           substr($afterNamespace, $classPos);
@@ -156,7 +156,7 @@ class ImportManager
     }
 
     /**
-     * Adiciona importações para arquivos de Schema (formulário v4)
+     * Adds imports for Schema files (v4 form)
      *
      * @param array<int, string> $formComponents
      */
@@ -177,16 +177,16 @@ class ImportManager
     }
 
     /**
-     * Adiciona importações para arquivos de Table (colunas, filtros, ações v4)
+     * Adds imports for Table files (v4 columns, filters, actions)
      *
      * @param array<int, string> $tableComponents
      */
     public function addTableFileImports(string $content, array $tableComponents, bool $softDeletes): string
     {
-        // Verificar se Builder está sendo usado no código
+        // Check if Builder is being used in the code
         $needsBuilder = (bool) preg_match('/function\s*\(\s*Builder|\(\s*Builder\s*\$|\:\s*Builder|use\s+function.*?Builder|fn\s*\(\s*Builder/', $content);
 
-        // Verificar se DatePicker é usado em filtros
+        // Check if DatePicker is used in filters
         if (in_array('Filter', $tableComponents, true) && (
             str_contains($content, 'DatePicker::make') ||
             (bool) preg_match('/date|datetime/', $content)
@@ -194,7 +194,7 @@ class ImportManager
             $tableComponents[] = 'DatePicker';
         }
 
-        // Verificar se TextInput é usado em filtros numéricos
+        // Check if TextInput is used in numeric filters
         if (in_array('Filter', $tableComponents, true) && (
             (bool) preg_match('/numeric|integer|decimal|float|double/', $content) ||
             str_contains($content, 'TextInput::make')
@@ -202,7 +202,7 @@ class ImportManager
             $tableComponents[] = 'TextInput';
         }
 
-        // Sempre adicionar ações
+        // Always add actions
         $tableComponents[] = 'EditAction';
         $tableComponents[] = 'BulkActionGroup';
         $tableComponents[] = 'DeleteBulkAction';
@@ -231,7 +231,7 @@ class ImportManager
     }
 
     /**
-     * Insere importações no conteúdo após a declaração de namespace
+     * Inserts imports into the content after the namespace declaration
      *
      * @param array<int, string> $imports
      */
@@ -245,10 +245,10 @@ class ImportManager
                 $classPos = $classMatches[0][1];
                 $importSection = substr($afterNamespace, 0, $classPos);
 
-                // Remover importações existentes
+                // Remove existing imports
                 $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
 
-                // Substituir por novas importações
+                // Replace with new imports
                 $importString = "\n\n" . implode("\n", $imports) . "\n\n";
                 $content = substr($content, 0, $namespaceEndPos) . $importString . substr($afterNamespace, $classPos);
             }

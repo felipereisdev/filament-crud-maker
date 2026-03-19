@@ -5,7 +5,7 @@ namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 class CodeValidator
 {
     /**
-     * Valida se os parênteses, colchetes e chaves estão balanceados
+     * Validates whether parentheses, brackets and braces are balanced
      */
     public function validateSyntax(string $code): bool
     {
@@ -20,16 +20,16 @@ class CodeValidator
                 $stack[] = $char;
             } elseif (isset($closeSymbols[$char])) {
                 if (empty($stack) || array_pop($stack) !== $closeSymbols[$char]) {
-                    return false; // Desbalanceado
+                    return false; // Unbalanced
                 }
             }
         }
 
-        return empty($stack); // True se tudo estiver balanceado
+        return empty($stack); // True if everything is balanced
     }
 
     /**
-     * Encontra a chave de fechamento correspondente
+     * Finds the matching closing brace
      */
     public function findMatchingCloseBrace(string $content, int $openBracePos): int|false
     {

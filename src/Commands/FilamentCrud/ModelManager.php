@@ -14,30 +14,30 @@ class ModelManager
     }
 
     /**
-     * Verifica se o modelo já existe e o cria se necessário
+     * Checks if the model already exists and creates it if needed
      */
     public function createIfNotExists(string $model, bool $softDeletes = false): bool
     {
         if (! File::exists(app_path('Models/' . $model . '.php'))) {
-            $this->log('Criando modelo ' . $model);
+            $this->log('Creating model ' . $model);
             $modelCommand = [
                 'name' => $model,
-                '-m' => true, // Cria migração
+                '-m' => true, // Create migration
             ];
 
             if ($softDeletes) {
-                $modelCommand['-s'] = true; // Adiciona soft deletes
+                $modelCommand['-s'] = true; // Add soft deletes
             }
 
             Artisan::call('make:model', $modelCommand);
 
-            $this->log('Modelo criado com sucesso!');
+            $this->log('Model created successfully!');
 
             return true;
         } else {
-            $this->log('Modelo já existe. Pulando criação do modelo.');
+            $this->log('Model already exists. Skipping model creation.');
 
-            // Verificar se o modelo tem softDeletes e adicionar se necessário
+            // Check if the model has softDeletes and add if needed
             if ($softDeletes) {
                 $this->addSoftDeletesIfNotExists($model);
             }
@@ -47,25 +47,25 @@ class ModelManager
     }
 
     /**
-     * Atualiza o modelo com relacionamentos e propriedades necessárias
+     * Updates the model with relationships and required properties
      */
     public function updateModel(string $model, array $fields, array $relations, bool $softDeletes = false): bool
     {
         $modelPath = app_path('Models/' . $model . '.php');
 
         if (! File::exists($modelPath)) {
-            $this->log("Modelo não encontrado: {$modelPath}", 'error');
+            $this->log("Model not found: {$modelPath}", 'error');
 
             return false;
         }
 
         $content = File::get($modelPath);
 
-        // Verificar se o modelo já usa softDeletes
+        // Check if the model already uses softDeletes
         $hasSoftDeletes = strpos($content, 'use Illuminate\Database\Eloquent\SoftDeletes;') !== false;
         $usesSoftDeletes = strpos($content, 'use SoftDeletes;') !== false;
 
-        // Adicionar softDeletes se necessário
+        // Add softDeletes if needed
         if ($softDeletes && ! $hasSoftDeletes) {
             $content = str_replace(
                 'use Illuminate\Database\Eloquent\Model;',
@@ -75,13 +75,13 @@ class ModelManager
         }
 
         if ($softDeletes && ! $usesSoftDeletes) {
-            // Encontrar a classe para adicionar o trait
+            // Find the class to add the trait
             $pattern = '/class\s+' . $model . '\s+extends\s+Model\s*\{/';
             $replacement = "class {$model} extends Model\n{\n    use SoftDeletes;\n";
             $content = preg_replace($pattern, $replacement, $content);
         }
 
-        // Adicionar propriedades fillable com base nos campos
+        // Add fillable properties based on fields
         $fillableFields = [];
         foreach ($fields as $field) {
             if (strpos($field, ':') !== false) {
@@ -91,7 +91,7 @@ class ModelManager
             }
         }
 
-        // Adicionar chaves estrangeiras das relações belongsTo
+        // Add foreign keys from belongsTo relations
         if (! empty($relations)) {
             foreach ($relations as $relation) {
                 if (strpos($relation, ':') !== false) {
@@ -107,19 +107,19 @@ class ModelManager
             }
         }
 
-        // Verificar se fillable já existe e atualizá-lo
+        // Check if fillable already exists and update it
         if (preg_match('/protected\s+\$fillable\s*=\s*\[(.*?)\];/s', $content, $matches)) {
-            // Fillable já existe, atualizar
+            // Fillable already exists, update it
             $currentFillable = $matches[1];
             $fillableString = implode(', ', $fillableFields);
             $newFillable = "protected \$fillable = [{$fillableString}];";
             $content = str_replace($matches[0], $newFillable, $content);
         } else {
-            // Adicionar fillable
+            // Add fillable
             $fillableString = implode(', ', $fillableFields);
             $fillableProperty = "\n    protected \$fillable = [{$fillableString}];\n";
 
-            // Encontrar um bom lugar para adicionar fillable (após a declaração da classe)
+            // Find a good place to add fillable (after the class declaration)
             $pattern = '/class\s+' . $model . '\s+extends\s+Model\s*\{[^\}]*?(\n\s*use\s+[^;]+;)?/s';
             if (preg_match($pattern, $content, $matches)) {
                 $position = strpos($content, $matches[0]) + strlen($matches[0]);
@@ -127,13 +127,13 @@ class ModelManager
             }
         }
 
-        // Adicionar métodos de relacionamento
+        // Add relationship methods
         if (! empty($relations)) {
             $relationMethods = $this->generateRelationMethods($relations);
 
-            // Verificar se o modelo já tem métodos de relacionamento
+            // Check if the model already has relationship methods
             if (! empty($relationMethods)) {
-                // Encontrar o final da classe para adicionar os métodos
+                // Find the end of the class to add the methods
                 $endClassPos = strrpos($content, '}');
                 if ($endClassPos !== false) {
                     $content = substr_replace($content, $relationMethods . "\n}", $endClassPos, 1);
@@ -141,15 +141,15 @@ class ModelManager
             }
         }
 
-        // Salvar as alterações
+        // Save the changes
         File::put($modelPath, $content);
-        $this->log("Modelo {$model} atualizado com sucesso!");
+        $this->log("Model {$model} updated successfully!");
 
         return true;
     }
 
     /**
-     * Adiciona soft deletes a um modelo existente
+     * Adds soft deletes to an existing model
      */
     private function addSoftDeletesIfNotExists(string $model): void
     {
@@ -161,12 +161,12 @@ class ModelManager
 
         if (! $hasSoftDeletes || ! $usesSoftDeletes) {
             $this->updateModel($model, [], [], true);
-            $this->log("SoftDeletes adicionado ao modelo {$model}.");
+            $this->log("SoftDeletes added to model {$model}.");
         }
     }
 
     /**
-     * Gera métodos de relacionamento com base nas relações
+     * Generates relationship methods based on the relations
      */
     private function generateRelationMethods(array $relations): string
     {
@@ -242,7 +242,7 @@ PHP;
     }
 
     /**
-     * Log mensagens com diferentes níveis
+     * Logs messages with different levels
      */
     private function log(string $message, string $level = 'info'): void
     {

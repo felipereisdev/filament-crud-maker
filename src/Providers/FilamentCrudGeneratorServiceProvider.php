@@ -11,17 +11,17 @@ class FilamentCrudGeneratorServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // Publicar o arquivo de configuração
+        // Publish the configuration file
         $this->publishes([
             __DIR__ . '/../config/filament-crud-generator.php' => config_path('filament-crud-generator.php'),
         ], 'filament-crud-generator-config');
 
-        // Publicar o arquivo de configuração do PHP CS Fixer
+        // Publish the PHP CS Fixer configuration file
         $this->publishes([
             __DIR__ . '/../config/php-cs-fixer.dist.php.example' => base_path('.php-cs-fixer.dist.php.example'),
         ], 'php-cs-fixer-config');
 
-        // Registrar comandos
+        // Register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
                 MakeFilamentCrud::class,
@@ -31,10 +31,10 @@ class FilamentCrudGeneratorServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        // Mesclar configurações
+        // Merge configurations
         $this->mergeConfigFrom(
             __DIR__ . '/../config/filament-crud-generator.php',
             'filament-crud-generator'
         );
     }
-} 
+}

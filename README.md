@@ -1,77 +1,77 @@
-# Gerador de CRUD para Filament v4
+# CRUD Generator for Filament v4
 
-Um pacote Laravel que gera rapidamente recursos CRUD completos para o Filament v4, economizando tempo de desenvolvimento.
+A Laravel package that quickly generates complete CRUD resources for Filament v4, saving development time.
 
-## Instalação
+## Installation
 
-Você pode instalar o pacote via composer:
+You can install the package via composer:
 
 ```bash
 composer require freis/filament-crud-generator
 ```
 
-Opcionalmente, você pode publicar o arquivo de configuração:
+Optionally, you can publish the configuration file:
 
 ```bash
 php artisan vendor:publish --tag="filament-crud-generator-config"
 ```
 
-Isso publicará um arquivo em `config/filament-crud-generator.php`.
+This will publish a file at `config/filament-crud-generator.php`.
 
-Você também pode publicar o arquivo de configuração do PHP CS Fixer:
+You can also publish the PHP CS Fixer configuration file:
 
 ```bash
 php artisan vendor:publish --tag="php-cs-fixer-config"
 ```
 
-## Utilização
+## Usage
 
-Para gerar um CRUD completo, use o comando:
-
-```bash
-php artisan make:filament-crud NomeDoModelo --fields=campo1:tipo,campo2:tipo --relations=tipoRelacao:ModeloRelacionado:campo1:tipo,campo2:tipo --softDeletes
-```
-
-### Parâmetros disponíveis:
-
-- `NomeDoModelo`: Nome do modelo a ser criado (no singular, com a primeira letra maiúscula).
-- `--fields`: Lista de campos e seus tipos, separados por vírgula.
-- `--relations`: Lista de relações e seus campos, no formato `tipoRelacao:ModeloRelacionado:campo1:tipo,campo2:tipo;tipoRelacao2:ModeloRelacionado2:campo1:tipo`.
-- `--softDeletes`: Flag opcional para adicionar soft deletes ao modelo.
-- `--no-migrate`: Flag opcional para pular a execução de migrações após a criação.
-- `--no-format`: Flag opcional para pular a formatação do código usando PHP CS Fixer.
-- `--clean-resources`: Limpar todos os recursos existentes.
-
-### Exemplos:
-
-1. Criando um modelo Produto com campos básicos:
+To generate a complete CRUD, use the command:
 
 ```bash
-php artisan make:filament-crud Produto --fields=nome:string:required:min=3,descricao:text,preco:decimal:required,ativo:boolean,imagem:image:nullable
+php artisan make:filament-crud ModelName --fields=field1:type,field2:type --relations=relationType:RelatedModel:field1:type,field2:type --softDeletes
 ```
 
-2. Criando um modelo Produto com relação a categoria:
+### Available parameters:
+
+- `ModelName`: Name of the model to be created (singular, with the first letter capitalized).
+- `--fields`: List of fields and their types, separated by comma.
+- `--relations`: List of relations and their fields, in the format `relationType:RelatedModel:field1:type,field2:type;relationType2:RelatedModel2:field1:type`.
+- `--softDeletes`: Optional flag to add soft deletes to the model.
+- `--no-migrate`: Optional flag to skip running migrations after creation.
+- `--no-format`: Optional flag to skip code formatting using PHP CS Fixer.
+- `--clean-resources`: Clean all existing resources.
+
+### Examples:
+
+1. Creating a Product model with basic fields:
 
 ```bash
-php artisan make:filament-crud Produto --fields=nome:string:required:min=3:max=100,descricao:text,preco:decimal:required,ativo:boolean --relations=belongsTo:Categoria
+php artisan make:filament-crud Product --fields=name:string:required:min=3,description:text,price:decimal:required,active:boolean,image:image:nullable
 ```
 
-3. Criando um modelo com softDeletes:
+2. Creating a Product model with a category relation:
 
 ```bash
-php artisan make:filament-crud Artigo --fields=titulo:string:required:min=5,conteudo:html:required,data_publicacao:date:required --softDeletes
+php artisan make:filament-crud Product --fields=name:string:required:min=3:max=100,description:text,price:decimal:required,active:boolean --relations=belongsTo:Category
 ```
 
-4. Criando um modelo com relações mais complexas:
+3. Creating a model with softDeletes:
 
 ```bash
-php artisan make:filament-crud Curso --fields=nome:string:required:min=3:unique,descricao:markdown:required,preco:decimal:required:between=0,9999.99,duracao:integer:required,publicado:boolean:false --relations=belongsTo:Professor;belongsToMany:Aluno;hasMany:Aula
+php artisan make:filament-crud Article --fields=title:string:required:min=5,content:html:required,publish_date:date:required --softDeletes
 ```
 
-## Suporte
+4. Creating a model with more complex relations:
 
-Se você encontrar algum problema ou tiver dúvidas, abra uma issue no repositório GitHub.
+```bash
+php artisan make:filament-crud Course --fields=name:string:required:min=3:unique,description:markdown:required,price:decimal:required:between=0,9999.99,duration:integer:required,published:boolean:false --relations=belongsTo:Teacher;belongsToMany:Student;hasMany:Lesson
+```
 
-## Licença
+## Support
 
-Este pacote é open-source e está disponível sob a licença MIT. 
+If you encounter any issues or have questions, please open an issue on the GitHub repository.
+
+## License
+
+This package is open-source and available under the MIT license.

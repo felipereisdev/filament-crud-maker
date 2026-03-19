@@ -12,77 +12,77 @@ class CodeFormatter
     }
 
     /**
-     * Formata o código usando PHP CS Fixer
+     * Formats the code using PHP CS Fixer
      */
     public function format(): bool
     {
-        $this->log('Formatando código com PHP CS Fixer...');
+        $this->log('Formatting code with PHP CS Fixer...');
 
-        // Verificar se o PHP CS Fixer está instalado
+        // Check if PHP CS Fixer is installed
         $hasCsFixer = $this->executeCommand('which php-cs-fixer', true);
         $composerBin = base_path('vendor/bin/php-cs-fixer');
 
         if (empty($hasCsFixer) && ! file_exists($composerBin)) {
-            $this->log('PHP CS Fixer não encontrado. Tentando instalar via Composer...', 'warn');
+            $this->log('PHP CS Fixer not found. Trying to install via Composer...', 'warn');
 
-            // Verificar se o composer.json existe
+            // Check if composer.json exists
             if (! file_exists(base_path('composer.json'))) {
-                $this->log('composer.json não encontrado. Não é possível instalar o PHP CS Fixer.', 'error');
+                $this->log('composer.json not found. Cannot install PHP CS Fixer.', 'error');
 
                 return false;
             }
 
-            // Instalar PHP CS Fixer
+            // Install PHP CS Fixer
             if ($this->executeCommand('composer require friendsofphp/php-cs-fixer --dev', false)) {
-                $this->log('PHP CS Fixer instalado com sucesso!');
+                $this->log('PHP CS Fixer installed successfully!');
 
-                // Criar arquivo de configuração se não existir
+                // Create configuration file if it does not exist
                 $this->createCsFixerConfig();
             } else {
-                $this->log('Falha ao instalar PHP CS Fixer. Pulando formatação de código.', 'error');
+                $this->log('Failed to install PHP CS Fixer. Skipping code formatting.', 'error');
 
                 return false;
             }
         }
 
-        // Verificar e criar arquivo de configuração se necessário
+        // Check and create configuration file if needed
         $this->createCsFixerConfig();
 
-        // Executar PHP CS Fixer
+        // Run PHP CS Fixer
         $csFixerCommand = file_exists($composerBin) ? $composerBin : 'php-cs-fixer';
 
         try {
             if (file_exists(base_path('.php-cs-fixer.dist.php'))) {
-                // Usar configuração .dist.php
-                $this->log('Usando configuração .php-cs-fixer.dist.php');
+                // Use .dist.php configuration
+                $this->log('Using .php-cs-fixer.dist.php configuration');
                 $result = $this->executeCommand("{$csFixerCommand} fix --config=.php-cs-fixer.dist.php", false);
             } elseif (file_exists(base_path('.php-cs-fixer.php'))) {
-                // Usar configuração existente
-                $this->log('Usando configuração existente do PHP CS Fixer');
+                // Use existing configuration
+                $this->log('Using existing PHP CS Fixer configuration');
                 $result = $this->executeCommand("{$csFixerCommand} fix --config=.php-cs-fixer.php", false);
             } else {
-                // Usar configuração padrão, mas especificando diretórios
+                // Use default configuration, specifying directories
                 $result = $this->executeCommand("{$csFixerCommand} fix app/ --allow-risky=yes", false);
             }
 
             if ($result) {
-                $this->log('Código formatado com sucesso!');
+                $this->log('Code formatted successfully!');
 
                 return true;
             } else {
-                $this->log('O PHP CS Fixer encontrou problemas. Verifique o log para detalhes.', 'warn');
+                $this->log('PHP CS Fixer found issues. Check the log for details.', 'warn');
 
                 return false;
             }
         } catch (\Exception $e) {
-            $this->log('Erro ao executar PHP CS Fixer: ' . $e->getMessage(), 'error');
+            $this->log('Error running PHP CS Fixer: ' . $e->getMessage(), 'error');
 
             return false;
         }
     }
 
     /**
-     * Cria o arquivo de configuração do PHP CS Fixer
+     * Creates the PHP CS Fixer configuration file
      */
     private function createCsFixerConfig(): void
     {
@@ -90,9 +90,9 @@ class CodeFormatter
         $configFileNew = base_path('.php-cs-fixer.dist.php');
         $configFileExample = base_path('.php-cs-fixer.dist.php.example');
 
-        // Verificar primeiro se o arquivo de exemplo existe, e se não existir, criá-lo
+        // First check if the example file exists, and create it if not
         if (! file_exists($configFileExample)) {
-            $this->log('Criando configuração de exemplo do PHP CS Fixer...');
+            $this->log('Creating PHP CS Fixer example configuration...');
             $phpCsFixerConfig = <<<'PHP'
 <?php
 
@@ -140,37 +140,37 @@ return $config->setRules([
     ->setFinder($finder);
 PHP;
             File::put($configFileExample, $phpCsFixerConfig);
-            $this->log('Arquivo .php-cs-fixer.dist.php.example criado!');
+            $this->log('.php-cs-fixer.dist.php.example file created!');
         }
 
-        // Verificar se o arquivo .php-cs-fixer.dist.php existe, se não, copiar do exemplo
+        // Check if the .php-cs-fixer.dist.php file exists, if not, copy from example
         if (! file_exists($configFileNew)) {
-            $this->log('Arquivo .php-cs-fixer.dist.php não encontrado. Criando...');
+            $this->log('.php-cs-fixer.dist.php file not found. Creating...');
 
             if (file_exists($configFileExample)) {
-                // Copiar do exemplo
+                // Copy from example
                 File::copy($configFileExample, $configFileNew);
-                $this->log('Arquivo .php-cs-fixer.dist.php criado a partir do exemplo!');
+                $this->log('.php-cs-fixer.dist.php file created from example!');
             } else {
-                // Criar arquivo diretamente
+                // Create file directly
                 File::put($configFileNew, $phpCsFixerConfig);
-                $this->log('Arquivo .php-cs-fixer.dist.php criado!');
+                $this->log('.php-cs-fixer.dist.php file created!');
             }
         }
 
-        // Se o arquivo antigo existir, mas o novo não, migrar para o novo formato
+        // If the old file exists but the new one does not, migrate to the new format
         if (file_exists($configFileOld) && ! file_exists($configFileNew)) {
             File::copy($configFileOld, $configFileNew);
-            $this->log('Arquivo .php-cs-fixer.php migrado para .php-cs-fixer.dist.php!');
+            $this->log('.php-cs-fixer.php migrated to .php-cs-fixer.dist.php!');
         }
     }
 
     /**
-     * Executa um comando do sistema e retorna o resultado
+     * Executes a system command and returns the result
      */
     private function executeCommand(string $command, bool $returnOutput = false)
     {
-        $this->log("Executando: {$command}");
+        $this->log("Running: {$command}");
 
         if ($returnOutput) {
             return shell_exec($command);
@@ -182,7 +182,7 @@ PHP;
     }
 
     /**
-     * Log mensagens com diferentes níveis
+     * Logs messages with different levels
      */
     private function log(string $message, string $level = 'info'): void
     {

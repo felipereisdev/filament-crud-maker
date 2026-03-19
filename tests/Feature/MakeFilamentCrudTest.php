@@ -10,7 +10,7 @@ test('command is registered', function () {
 
 test('requires model name', function () {
     $this->artisan('make:filament-crud')
-        ->expectsOutputToContain('Você deve fornecer um nome de modelo.')
+        ->expectsOutputToContain('You must provide a model name.')
         ->assertExitCode(1);
 });
 
@@ -32,13 +32,13 @@ test('displays input information', function () {
     }
 
     $content = $output->fetch();
-    expect($content)->toContain('Modelo: Post')
-        ->toContain('Campos: title:string,body:text')
-        ->toContain('Relações: hasMany:Comment');
+    expect($content)->toContain('Model: Post')
+        ->toContain('Fields: title:string,body:text')
+        ->toContain('Relations: hasMany:Comment');
 });
 
 test('flag --clean-resources works correctly', function () {
     $this->artisan('make:filament-crud', ['--clean-resources' => true])
-        ->expectsOutputToContain('Iniciando limpeza de todos os recursos Filament...')
+        ->expectsOutputToContain('Starting cleanup of all Filament resources...')
         ->assertExitCode(0);
 });

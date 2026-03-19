@@ -22,36 +22,36 @@ class MakeFilamentCrud extends Command
      *
      * @var string
      */
-    protected $signature = 'make:filament-crud 
-                            {model? : O nome do modelo para gerar o CRUD} 
-                            {--fields= : Lista de campos separados por vírgula (nome:tipo:default)}
-                            {--relations= : Lista de relações separadas por ponto-e-vírgula (tipo:modelo)}
-                            {--softDeletes : Adicionar soft deletes ao modelo}
-                            {--no-migrate : Não executar migrações automaticamente}
-                            {--no-format : Não formatar o código gerado}
-                            {--clean-resources : Limpar todos os recursos existentes}';
+    protected $signature = 'make:filament-crud
+                            {model? : The model name to generate the CRUD for}
+                            {--fields= : Comma-separated list of fields (name:type:default)}
+                            {--relations= : Semicolon-separated list of relations (type:model)}
+                            {--softDeletes : Add soft deletes to the model}
+                            {--no-migrate : Do not run migrations automatically}
+                            {--no-format : Do not format the generated code}
+                            {--clean-resources : Clean all existing resources}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Gera um CRUD completo no Filament v4';
+    protected $description = 'Generates a complete CRUD in Filament v4';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        // Verificar se apenas queremos limpar os recursos
+        // Check if we only want to clean resources
         if ($this->option('clean-resources')) {
             return $this->cleanResources();
         }
 
-        // Verificar se o modelo foi fornecido
+        // Check if the model was provided
         $model = $this->argument('model');
         if (empty($model)) {
-            $this->error('Você deve fornecer um nome de modelo.');
+            $this->error('You must provide a model name.');
 
             return 1;
         }
@@ -62,17 +62,17 @@ class MakeFilamentCrud extends Command
         $skipMigrations = $this->option('no-migrate') ?? false;
         $skipCsFixer = $this->option('no-format') ?? false;
 
-        // Informações para depuração
-        $this->info('=== INFORMAÇÕES DE ENTRADA ===');
-        $this->info("Modelo: {$model}");
-        $this->info("Campos: {$fields}");
-        $this->info("Relações: {$relations}");
-        $this->info("SoftDeletes: " . ($softDeletes ? 'Sim' : 'Não'));
-        $this->info("Pular migrações: " . ($skipMigrations ? 'Sim' : 'Não'));
-        $this->info("Pular formatação: " . ($skipCsFixer ? 'Sim' : 'Não'));
-        $this->info('============================');
+        // Debug information
+        $this->info('=== INPUT INFORMATION ===');
+        $this->info("Model: {$model}");
+        $this->info("Fields: {$fields}");
+        $this->info("Relations: {$relations}");
+        $this->info("SoftDeletes: " . ($softDeletes ? 'Yes' : 'No'));
+        $this->info("Skip migrations: " . ($skipMigrations ? 'Yes' : 'No'));
+        $this->info("Skip formatting: " . ($skipCsFixer ? 'Yes' : 'No'));
+        $this->info('========================');
 
-        // Inicializar as classes necessárias
+        // Initialize the required classes
         $codeValidator = new CodeValidator();
         $importManager = new ImportManager();
         $formGenerator = new FormComponentGenerator();
@@ -88,7 +88,7 @@ class MakeFilamentCrud extends Command
         $migrationManager = new MigrationManager($this);
         $modelManager = new ModelManager($this);
 
-        // Inicializar o gerador de CRUD
+        // Initialize the CRUD generator
         $crudGenerator = new CrudGenerator(
             $modelManager,
             $migrationManager,
@@ -97,7 +97,7 @@ class MakeFilamentCrud extends Command
             $this
         );
 
-        // Gerar o CRUD
+        // Generate the CRUD
         $result = $crudGenerator->generate(
             $model,
             $fields,
@@ -111,13 +111,13 @@ class MakeFilamentCrud extends Command
     }
 
     /**
-     * Limpa os recursos existentes
+     * Cleans existing resources
      */
     private function cleanResources(): int
     {
-        $this->info('Iniciando limpeza de todos os recursos Filament...');
+        $this->info('Starting cleanup of all Filament resources...');
 
-        // Inicializar as classes necessárias
+        // Initialize the required classes
         $codeValidator = new CodeValidator();
         $importManager = new ImportManager();
         $formGenerator = new FormComponentGenerator();
@@ -131,7 +131,7 @@ class MakeFilamentCrud extends Command
         );
         $codeFormatter = new CodeFormatter($this);
 
-        // Inicializar o gerador de CRUD com as classes mínimas necessárias
+        // Initialize the CRUD generator with the minimum required classes
         $crudGenerator = new CrudGenerator(
             new ModelManager($this),
             new MigrationManager($this),
@@ -140,15 +140,15 @@ class MakeFilamentCrud extends Command
             $this
         );
 
-        // Limpar todos os recursos
+        // Clean all resources
         if ($crudGenerator->cleanAllResources()) {
-            $this->info('Todos os recursos foram limpos com sucesso!');
+            $this->info('All resources have been cleaned successfully!');
         } else {
-            $this->error('Ocorreu um erro ao limpar os recursos.');
+            $this->error('An error occurred while cleaning resources.');
 
             return 1;
         }
 
         return 0;
     }
-} 
+}
