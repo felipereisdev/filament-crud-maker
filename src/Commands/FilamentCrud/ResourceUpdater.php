@@ -7,24 +7,13 @@ use Illuminate\Support\Facades\File;
 
 class ResourceUpdater
 {
-    private FormComponentGenerator $formGenerator;
-    private TableComponentGenerator $tableGenerator;
-    private ImportManager $importManager;
-    private CodeValidator $codeValidator;
-    private ?Command $command;
-
     public function __construct(
-        FormComponentGenerator $formGenerator,
-        TableComponentGenerator $tableGenerator,
-        ImportManager $importManager,
-        CodeValidator $codeValidator,
-        ?Command $command = null
+        private readonly FormComponentGenerator $formGenerator,
+        private readonly TableComponentGenerator $tableGenerator,
+        private readonly ImportManager $importManager,
+        private readonly CodeValidator $codeValidator,
+        private readonly ?Command $command = null
     ) {
-        $this->formGenerator = $formGenerator;
-        $this->tableGenerator = $tableGenerator;
-        $this->importManager = $importManager;
-        $this->codeValidator = $codeValidator;
-        $this->command = $command;
     }
 
     /**
@@ -165,21 +154,11 @@ class ResourceUpdater
     private function log(string $message, string $level = 'info'): void
     {
         if ($this->command) {
-            switch ($level) {
-                case 'error':
-                    $this->command->error($message);
-
-                    break;
-                case 'warn':
-                    $this->command->warn($message);
-
-                    break;
-                case 'info':
-                default:
-                    $this->command->info($message);
-
-                    break;
-            }
+            match ($level) {
+                'error' => $this->command->error($message),
+                'warn' => $this->command->warn($message),
+                default => $this->command->info($message),
+            };
         }
     }
 }

@@ -8,24 +8,13 @@ use Illuminate\Support\Facades\File;
 
 class CrudGenerator
 {
-    private ModelManager $modelManager;
-    private MigrationManager $migrationManager;
-    private ResourceUpdater $resourceUpdater;
-    private CodeFormatter $codeFormatter;
-    private ?Command $command;
-
     public function __construct(
-        ModelManager $modelManager,
-        MigrationManager $migrationManager,
-        ResourceUpdater $resourceUpdater,
-        CodeFormatter $codeFormatter,
-        ?Command $command = null
+        private readonly ModelManager $modelManager,
+        private readonly MigrationManager $migrationManager,
+        private readonly ResourceUpdater $resourceUpdater,
+        private readonly CodeFormatter $codeFormatter,
+        private readonly ?Command $command = null
     ) {
-        $this->modelManager = $modelManager;
-        $this->migrationManager = $migrationManager;
-        $this->resourceUpdater = $resourceUpdater;
-        $this->codeFormatter = $codeFormatter;
-        $this->command = $command;
     }
 
     /**
@@ -281,21 +270,11 @@ class CrudGenerator
     private function log(string $message, string $level = 'info'): void
     {
         if ($this->command) {
-            switch ($level) {
-                case 'error':
-                    $this->command->error($message);
-
-                    break;
-                case 'warn':
-                    $this->command->warn($message);
-
-                    break;
-                case 'info':
-                default:
-                    $this->command->info($message);
-
-                    break;
-            }
+            match ($level) {
+                'error' => $this->command->error($message),
+                'warn' => $this->command->warn($message),
+                default => $this->command->info($message),
+            };
         }
     }
 }

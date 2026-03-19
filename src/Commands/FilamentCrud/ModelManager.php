@@ -9,11 +9,8 @@ use Illuminate\Support\Str;
 
 class ModelManager
 {
-    private ?Command $command;
-
-    public function __construct(?Command $command = null)
+    public function __construct(private readonly ?Command $command = null)
     {
-        $this->command = $command;
     }
 
     /**
@@ -179,24 +176,13 @@ class ModelManager
             if (strpos($relation, ':') !== false) {
                 list($relationType, $relatedModel) = explode(':', $relation);
 
-                switch ($relationType) {
-                    case 'hasOne':
-                        $methods .= $this->generateHasOneMethod($relatedModel);
-
-                        break;
-                    case 'hasMany':
-                        $methods .= $this->generateHasManyMethod($relatedModel);
-
-                        break;
-                    case 'belongsTo':
-                        $methods .= $this->generateBelongsToMethod($relatedModel);
-
-                        break;
-                    case 'belongsToMany':
-                        $methods .= $this->generateBelongsToManyMethod($relatedModel);
-
-                        break;
-                }
+                $methods .= match ($relationType) {
+                    'hasOne' => $this->generateHasOneMethod($relatedModel),
+                    'hasMany' => $this->generateHasManyMethod($relatedModel),
+                    'belongsTo' => $this->generateBelongsToMethod($relatedModel),
+                    'belongsToMany' => $this->generateBelongsToManyMethod($relatedModel),
+                    default => '',
+                };
             }
         }
 
@@ -261,21 +247,11 @@ PHP;
     private function log(string $message, string $level = 'info'): void
     {
         if ($this->command) {
-            switch ($level) {
-                case 'error':
-                    $this->command->error($message);
-
-                    break;
-                case 'warn':
-                    $this->command->warn($message);
-
-                    break;
-                case 'info':
-                default:
-                    $this->command->info($message);
-
-                    break;
-            }
+            match ($level) {
+                'error' => $this->command->error($message),
+                'warn' => $this->command->warn($message),
+                default => $this->command->info($message),
+            };
         }
     }
 }

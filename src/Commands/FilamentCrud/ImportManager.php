@@ -6,8 +6,10 @@ class ImportManager
 {
     /**
      * Mapeamento de componentes para importações completas
+     *
+     * @var array<string, string>
      */
-    private array $importMap = [
+    private const array IMPORT_MAP = [
         'TextInput' => 'Filament\Forms\Components\TextInput',
         'Textarea' => 'Filament\Forms\Components\Textarea',
         'Select' => 'Filament\Forms\Components\Select',
@@ -89,8 +91,8 @@ class ImportManager
         // Gerar importações para os componentes usados
         $imports = [];
         foreach ($usedComponents as $component) {
-            if (isset($this->importMap[$component])) {
-                $imports[] = 'use ' . $this->importMap[$component] . ';';
+            if (isset(self::IMPORT_MAP[$component])) {
+                $imports[] = 'use ' . self::IMPORT_MAP[$component] . ';';
             }
         }
 

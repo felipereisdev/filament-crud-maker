@@ -9,181 +9,65 @@ class FormComponentGenerator
      */
     public function generate(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
-        $component = null;
-
-        switch ($fieldType) {
-            case 'string':
-            case 'text':
-                $component = "TextInput::make('{$fieldName}')";
-
-                break;
-            case 'textarea':
-            case 'longtext':
-                $component = "Textarea::make('{$fieldName}')";
-
-                break;
-            case 'boolean':
-                $component = "Toggle::make('{$fieldName}')";
-
-                break;
-            case 'date':
-                $component = "DatePicker::make('{$fieldName}')";
-
-                break;
-            case 'datetime':
-                $component = "DateTimePicker::make('{$fieldName}')";
-
-                break;
-            case 'time':
-                $component = "TimePicker::make('{$fieldName}')";
-
-                break;
-            case 'select':
-            case 'enum':
-                $component = "Select::make('{$fieldName}')";
-
-                break;
-            case 'foreignId':
-                // Tentar extrair o nome da relação do nome do campo
-                $relationName = str_replace('_id', '', $fieldName);
-                $component = "Select::make('{$fieldName}')";
-                // Se o nome da relação for diferente do nome do campo, definir a relação
-                if ($relationName != $fieldName) {
-                    $relatedModelName = ucfirst($relationName);
-                    $component .= "->relationship('{$relationName}', 'name')";
-                }
-
-                break;
-            case 'checkboxes':
-                $component = "CheckboxList::make('{$fieldName}')";
-
-                break;
-            case 'radio':
-                $component = "Radio::make('{$fieldName}')";
-
-                break;
-            case 'color':
-                $component = "ColorPicker::make('{$fieldName}')";
-
-                break;
-            case 'file':
-                $component = "FileUpload::make('{$fieldName}')";
-
-                break;
-            case 'image':
-                $component = "FileUpload::make('{$fieldName}')"
-                           . "->image()"
-                           . "->imageResizeMode('cover')"
-                           . "->imageCropAspectRatio('16:9')";
-
-                break;
-            case 'richtext':
-            case 'editor':
-                $component = "RichEditor::make('{$fieldName}')";
-
-                break;
-            case 'markdown':
-                $component = "MarkdownEditor::make('{$fieldName}')";
-
-                break;
-            case 'tags':
-                $component = "TagsInput::make('{$fieldName}')";
-
-                break;
-            case 'decimal':
-            case 'float':
-            case 'double':
-                $component = "TextInput::make('{$fieldName}')"
-                            . "->numeric()"
-                            . "->inputMode('decimal')";
-
-                break;
-            case 'integer':
-            case 'bigInteger':
-                $component = "TextInput::make('{$fieldName}')"
-                            . "->numeric()"
-                            . "->inputMode('numeric')"
-                            . "->step(1)";
-
-                break;
-            default:
-                $component = "TextInput::make('{$fieldName}')";
-
-                break;
-        }
+        $component = match ($fieldType) {
+            'string', 'text' => "TextInput::make('{$fieldName}')",
+            'textarea', 'longtext' => "Textarea::make('{$fieldName}')",
+            'boolean' => "Toggle::make('{$fieldName}')",
+            'date' => "DatePicker::make('{$fieldName}')",
+            'datetime' => "DateTimePicker::make('{$fieldName}')",
+            'time' => "TimePicker::make('{$fieldName}')",
+            'select', 'enum' => "Select::make('{$fieldName}')",
+            'foreignId' => "Select::make('{$fieldName}')"
+                . (str_replace('_id', '', $fieldName) !== $fieldName
+                    ? "->relationship('" . str_replace('_id', '', $fieldName) . "', 'name')"
+                    : ''),
+            'checkboxes' => "CheckboxList::make('{$fieldName}')",
+            'radio' => "Radio::make('{$fieldName}')",
+            'color' => "ColorPicker::make('{$fieldName}')",
+            'file' => "FileUpload::make('{$fieldName}')",
+            'image' => "FileUpload::make('{$fieldName}')"
+                . "->image()"
+                . "->imageResizeMode('cover')"
+                . "->imageCropAspectRatio('16:9')",
+            'richtext', 'editor' => "RichEditor::make('{$fieldName}')",
+            'markdown' => "MarkdownEditor::make('{$fieldName}')",
+            'tags' => "TagsInput::make('{$fieldName}')",
+            'decimal', 'float', 'double' => "TextInput::make('{$fieldName}')"
+                . "->numeric()"
+                . "->inputMode('decimal')",
+            'integer', 'bigInteger' => "TextInput::make('{$fieldName}')"
+                . "->numeric()"
+                . "->inputMode('numeric')"
+                . "->step(1)",
+            default => "TextInput::make('{$fieldName}')",
+        };
 
         // Adicionar validações se existirem
         if (! empty($validationRules)) {
             foreach ($validationRules as $rule => $value) {
-                switch ($rule) {
-                    case 'required':
-                        $component .= '->required()';
-
-                        break;
-                    case 'min':
-                        // Verificar se é min para números ou strings
-                        if (in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double'])) {
-                            $component .= "->minValue({$value})";
-                        } else {
-                            $component .= "->minLength({$value})";
-                        }
-
-                        break;
-                    case 'max':
-                        // Verificar se é max para números ou strings
-                        if (in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double'])) {
-                            $component .= "->maxValue({$value})";
-                        } else {
-                            $component .= "->maxLength({$value})";
-                        }
-
-                        break;
-                    case 'email':
-                        $component .= '->email()';
-
-                        break;
-                    case 'nullable':
-                        $component .= '->nullable()';
-
-                        break;
-                    case 'unique':
-                        $component .= '->unique(ignoreRecord: true)';
-
-                        break;
-                    case 'between':
-                        if (strpos($value, ',') !== false) {
-                            list($min, $max) = explode(',', $value);
-                            $component .= "->minValue({$min})->maxValue({$max})";
-                        }
-
-                        break;
-                    case 'url':
-                        $component .= '->url()';
-
-                        break;
-                    case 'tel':
-                    case 'phone':
-                    case 'telephone':
-                        $component .= '->tel()';
-
-                        break;
-                    case 'password':
-                        $component .= '->password()';
-
-                        break;
-                    case 'confirmed':
-                        $component .= '->confirmed()';
-
-                        break;
-                    case 'exists':
-                        // Formato padrão: exists:table,column
-                        if (strpos($value, ',') !== false) {
-                            list($table, $column) = explode(',', $value);
-                            $component .= "->exists('{$table}', '{$column}')";
-                        }
-
-                        break;
-                }
+                $component .= match ($rule) {
+                    'required' => '->required()',
+                    'min' => in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double'])
+                        ? "->minValue({$value})"
+                        : "->minLength({$value})",
+                    'max' => in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double'])
+                        ? "->maxValue({$value})"
+                        : "->maxLength({$value})",
+                    'email' => '->email()',
+                    'nullable' => '->nullable()',
+                    'unique' => '->unique(ignoreRecord: true)',
+                    'between' => str_contains($value, ',')
+                        ? "->minValue(" . explode(',', $value)[0] . ")->maxValue(" . explode(',', $value)[1] . ")"
+                        : '',
+                    'url' => '->url()',
+                    'tel', 'phone', 'telephone' => '->tel()',
+                    'password' => '->password()',
+                    'confirmed' => '->confirmed()',
+                    'exists' => str_contains($value, ',')
+                        ? "->exists('" . explode(',', $value)[0] . "', '" . explode(',', $value)[1] . "')"
+                        : '',
+                    default => '',
+                };
             }
         }
 
@@ -207,44 +91,23 @@ class FormComponentGenerator
      */
     public function getComponentType(string $fieldType): string
     {
-        switch ($fieldType) {
-            case 'string':
-            case 'text':
-                return 'TextInput';
-            case 'textarea':
-            case 'longtext':
-                return 'Textarea';
-            case 'boolean':
-                return 'Toggle';
-            case 'date':
-                return 'DatePicker';
-            case 'datetime':
-                return 'DateTimePicker';
-            case 'time':
-                return 'TimePicker';
-            case 'select':
-            case 'enum':
-            case 'foreignId':
-                return 'Select';
-            case 'checkboxes':
-                return 'CheckboxList';
-            case 'radio':
-                return 'Radio';
-            case 'color':
-                return 'ColorPicker';
-            case 'file':
-            case 'image':
-                return 'FileUpload';
-            case 'richtext':
-            case 'editor':
-                return 'RichEditor';
-            case 'markdown':
-                return 'MarkdownEditor';
-            case 'tags':
-                return 'TagsInput';
-            default:
-                return 'TextInput';
-        }
+        return match ($fieldType) {
+            'string', 'text' => 'TextInput',
+            'textarea', 'longtext' => 'Textarea',
+            'boolean' => 'Toggle',
+            'date' => 'DatePicker',
+            'datetime' => 'DateTimePicker',
+            'time' => 'TimePicker',
+            'select', 'enum', 'foreignId' => 'Select',
+            'checkboxes' => 'CheckboxList',
+            'radio' => 'Radio',
+            'color' => 'ColorPicker',
+            'file', 'image' => 'FileUpload',
+            'richtext', 'editor' => 'RichEditor',
+            'markdown' => 'MarkdownEditor',
+            'tags' => 'TagsInput',
+            default => 'TextInput',
+        };
     }
 
     /**

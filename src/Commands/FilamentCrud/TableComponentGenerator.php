@@ -9,96 +9,36 @@ class TableComponentGenerator
      */
     public function generateColumn(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
-        $column = null;
-
-        switch ($fieldType) {
-            case 'string':
-            case 'text':
-                $column = "TextColumn::make('{$fieldName}')";
-
-                break;
-            case 'textarea':
-            case 'longtext':
-            case 'markdown':
-            case 'richtext':
-            case 'editor':
-                $column = "TextColumn::make('{$fieldName}')"
-                       . "->limit(50)"
-                       . "->tooltip(function (\$state): ?string {
+        $column = match ($fieldType) {
+            'string', 'text' => "TextColumn::make('{$fieldName}')",
+            'textarea', 'longtext', 'markdown', 'richtext', 'editor' => "TextColumn::make('{$fieldName}')"
+                . "->limit(50)"
+                . "->tooltip(function (\$state): ?string {
                            return strlen(\$state) > 50 ? \$state : null;
-                         })";
-
-                break;
-            case 'enum':
-                $column = "TextColumn::make('{$fieldName}')"
-                        . "->badge()";
-
-                break;
-            case 'boolean':
-                $column = "ToggleColumn::make('{$fieldName}')";
-
-                break;
-            case 'date':
-                $column = "TextColumn::make('{$fieldName}')"
-                        . "->date()";
-
-                break;
-            case 'datetime':
-                $column = "TextColumn::make('{$fieldName}')"
-                        . "->dateTime()";
-
-                break;
-            case 'time':
-                $column = "TextColumn::make('{$fieldName}')"
-                        . "->time()";
-
-                break;
-            case 'decimal':
-            case 'float':
-            case 'double':
-                // Para campos de dinheiro/preço
-                if (strpos($fieldName, 'price') !== false ||
-                    strpos($fieldName, 'preco') !== false ||
-                    strpos($fieldName, 'valor') !== false) {
-                    $column = "TextColumn::make('{$fieldName}')"
-                            . "->money('BRL')";
-                } else {
-                    $column = "TextColumn::make('{$fieldName}')"
-                            . "->numeric(2)";
-                }
-
-                break;
-            case 'integer':
-            case 'bigInteger':
-                $column = "TextColumn::make('{$fieldName}')"
-                        . "->numeric(0)";
-
-                break;
-            case 'color':
-                $column = "ColorColumn::make('{$fieldName}')";
-
-                break;
-            case 'image':
-                $column = "ImageColumn::make('{$fieldName}')"
-                        . "->circular()";
-
-                break;
-            case 'foreignId':
-                // Tentar extrair o nome da relação do nome do campo
-                $relationName = str_replace('_id', '', $fieldName);
-                $column = "TextColumn::make('{$relationName}.name')";
-
-                break;
-            case 'tags':
-                $column = "TextColumn::make('{$fieldName}')"
-                        . "->badge()";
-
-                break;
-            default:
-                $column = "TextColumn::make('{$fieldName}')";
-
-                break;
-        }
+                         })",
+            'enum' => "TextColumn::make('{$fieldName}')"
+                . "->badge()",
+            'boolean' => "ToggleColumn::make('{$fieldName}')",
+            'date' => "TextColumn::make('{$fieldName}')"
+                . "->date()",
+            'datetime' => "TextColumn::make('{$fieldName}')"
+                . "->dateTime()",
+            'time' => "TextColumn::make('{$fieldName}')"
+                . "->time()",
+            'decimal', 'float', 'double' => "TextColumn::make('{$fieldName}')"
+                . (str_contains($fieldName, 'price') || str_contains($fieldName, 'preco') || str_contains($fieldName, 'valor')
+                    ? "->money('BRL')"
+                    : "->numeric(2)"),
+            'integer', 'bigInteger' => "TextColumn::make('{$fieldName}')"
+                . "->numeric(0)",
+            'color' => "ColorColumn::make('{$fieldName}')",
+            'image' => "ImageColumn::make('{$fieldName}')"
+                . "->circular()",
+            'foreignId' => "TextColumn::make('" . str_replace('_id', '', $fieldName) . ".name')",
+            'tags' => "TextColumn::make('{$fieldName}')"
+                . "->badge()",
+            default => "TextColumn::make('{$fieldName}')",
+        };
 
         // Adicionar propriedades comuns para colunas
         if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'enum', 'email', 'url'])) {
@@ -115,36 +55,19 @@ class TableComponentGenerator
      */
     public function generateFilter(string $fieldName, string $fieldType, array $validationRules = []): ?string
     {
-        $filter = null;
-
-        switch ($fieldType) {
-            case 'boolean':
-                $filter = "TernaryFilter::make('{$fieldName}')";
-
-                break;
-            case 'foreignId':
-                // Tentar extrair o nome da relação do nome do campo
-                $relationName = str_replace('_id', '', $fieldName);
-                $relatedModelName = ucfirst($relationName);
-                $filter = "SelectFilter::make('{$fieldName}')"
-                        . "->relationship('{$relationName}', 'name')";
-
-                break;
-            case 'select':
-            case 'enum':
-                $filter = "SelectFilter::make('{$fieldName}')";
-
-                break;
-            case 'date':
-            case 'datetime':
-                $filter = "Filter::make('{$fieldName}')"
-                        . "->form(["
-                        . "DatePicker::make('{$fieldName}_from')"
-                        . "->label('Data inicial'),"
-                        . "DatePicker::make('{$fieldName}_until')"
-                        . "->label('Data final')"
-                        . "])"
-                        . "->query(function (Builder \$query, array \$data): Builder {
+        $filter = match ($fieldType) {
+            'boolean' => "TernaryFilter::make('{$fieldName}')",
+            'foreignId' => "SelectFilter::make('{$fieldName}')"
+                . "->relationship('" . str_replace('_id', '', $fieldName) . "', 'name')",
+            'select', 'enum' => "SelectFilter::make('{$fieldName}')",
+            'date', 'datetime' => "Filter::make('{$fieldName}')"
+                . "->form(["
+                . "DatePicker::make('{$fieldName}_from')"
+                . "->label('Data inicial'),"
+                . "DatePicker::make('{$fieldName}_until')"
+                . "->label('Data final')"
+                . "])"
+                . "->query(function (Builder \$query, array \$data): Builder {
                             return \$query
                                 ->when(
                                     \$data['{$fieldName}_from'],
@@ -154,24 +77,17 @@ class TableComponentGenerator
                                     \$data['{$fieldName}_until'],
                                     fn (Builder \$query, \$date): Builder => \$query->whereDate('{$fieldName}', '<=', \$date),
                                 );
-                        })";
-
-                break;
-            case 'decimal':
-            case 'float':
-            case 'double':
-            case 'integer':
-            case 'bigInteger':
-                $filter = "Filter::make('{$fieldName}')"
-                        . "->form(["
-                        . "TextInput::make('{$fieldName}_from')"
-                        . "->label('Valor mínimo')"
-                        . "->numeric(),"
-                        . "TextInput::make('{$fieldName}_until')"
-                        . "->label('Valor máximo')"
-                        . "->numeric()"
-                        . "])"
-                        . "->query(function (Builder \$query, array \$data): Builder {
+                        })",
+            'decimal', 'float', 'double', 'integer', 'bigInteger' => "Filter::make('{$fieldName}')"
+                . "->form(["
+                . "TextInput::make('{$fieldName}_from')"
+                . "->label('Valor mínimo')"
+                . "->numeric(),"
+                . "TextInput::make('{$fieldName}_until')"
+                . "->label('Valor máximo')"
+                . "->numeric()"
+                . "])"
+                . "->query(function (Builder \$query, array \$data): Builder {
                             return \$query
                                 ->when(
                                     \$data['{$fieldName}_from'],
@@ -181,27 +97,14 @@ class TableComponentGenerator
                                     \$data['{$fieldName}_until'],
                                     fn (Builder \$query, \$max): Builder => \$query->where('{$fieldName}', '<=', \$max),
                                 );
-                        })";
-
-                break;
-            case 'string':
-            case 'text':
-            case 'textarea':
-            case 'longtext':
-                // Somente criar filtro para campos de texto que provavelmente representam status ou categorias
-                if (strpos($fieldName, 'status') !== false ||
-                    strpos($fieldName, 'type') !== false ||
-                    strpos($fieldName, 'tipo') !== false ||
-                    strpos($fieldName, 'category') !== false ||
-                    strpos($fieldName, 'categoria') !== false) {
-                    $filter = "SelectFilter::make('{$fieldName}')";
-                }
-
-                break;
-            default:
-                // Não criar filtros para outros tipos por padrão
-                break;
-        }
+                        })",
+            'string', 'text', 'textarea', 'longtext' => (
+                str_contains($fieldName, 'status') || str_contains($fieldName, 'type') || str_contains($fieldName, 'tipo') || str_contains($fieldName, 'category') || str_contains($fieldName, 'categoria')
+                    ? "SelectFilter::make('{$fieldName}')"
+                    : null
+            ),
+            default => null,
+        };
 
         return $filter;
     }
@@ -212,44 +115,21 @@ class TableComponentGenerator
     public function getComponentType(string $fieldType, string $context = 'column'): string
     {
         if ($context === 'column') {
-            switch ($fieldType) {
-                case 'boolean':
-                    return 'ToggleColumn';
-                case 'image':
-                    return 'ImageColumn';
-                case 'color':
-                    return 'ColorColumn';
-                case 'icon':
-                    return 'IconColumn';
-                case 'enum':
-                case 'tags':
-                    return 'BadgeColumn';
-                default:
-                    return 'TextColumn';
-            }
+            return match ($fieldType) {
+                'boolean' => 'ToggleColumn',
+                'image' => 'ImageColumn',
+                'color' => 'ColorColumn',
+                'icon' => 'IconColumn',
+                'enum', 'tags' => 'BadgeColumn',
+                default => 'TextColumn',
+            };
         } elseif ($context === 'filter') {
-            switch ($fieldType) {
-                case 'boolean':
-                    return 'TernaryFilter';
-                case 'select':
-                case 'enum':
-                case 'foreignId':
-                case 'status':
-                case 'type':
-                case 'category':
-                    return 'SelectFilter';
-                case 'date':
-                case 'datetime':
-                case 'time':
-                case 'decimal':
-                case 'float':
-                case 'double':
-                case 'integer':
-                case 'bigInteger':
-                    return 'Filter';
-                default:
-                    return '';
-            }
+            return match ($fieldType) {
+                'boolean' => 'TernaryFilter',
+                'select', 'enum', 'foreignId', 'status', 'type', 'category' => 'SelectFilter',
+                'date', 'datetime', 'time', 'decimal', 'float', 'double', 'integer', 'bigInteger' => 'Filter',
+                default => '',
+            };
         }
 
         return '';

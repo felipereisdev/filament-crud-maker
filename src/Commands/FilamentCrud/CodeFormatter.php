@@ -7,11 +7,8 @@ use Illuminate\Support\Facades\File;
 
 class CodeFormatter
 {
-    private ?Command $command;
-
-    public function __construct(?Command $command = null)
+    public function __construct(private readonly ?Command $command = null)
     {
-        $this->command = $command;
     }
 
     /**
@@ -190,21 +187,11 @@ PHP;
     private function log(string $message, string $level = 'info'): void
     {
         if ($this->command) {
-            switch ($level) {
-                case 'error':
-                    $this->command->error($message);
-
-                    break;
-                case 'warn':
-                    $this->command->warn($message);
-
-                    break;
-                case 'info':
-                default:
-                    $this->command->info($message);
-
-                    break;
-            }
+            match ($level) {
+                'error' => $this->command->error($message),
+                'warn' => $this->command->warn($message),
+                default => $this->command->info($message),
+            };
         }
     }
 }
