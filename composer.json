@@ -1,5 +1,5 @@
 {
-    "name": "freis/filament-crud-generator",
+    "name": "felipereisdev/filament-crud-generator",
     "description": "Gerador de CRUD para Filament v4",
     "type": "library",
     "license": "MIT",
