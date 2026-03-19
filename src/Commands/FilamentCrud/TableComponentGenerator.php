@@ -7,42 +7,42 @@ class TableComponentGenerator
     /**
      * Generates a table column based on the field type
      *
-     * @param array<string, string> $validationRules
+     * @param  array<string, string>  $validationRules
      */
     public function generateColumn(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
         $column = match ($fieldType) {
             'string', 'text' => "TextColumn::make('{$fieldName}')",
             'textarea', 'longtext', 'markdown', 'richtext', 'editor', 'code', 'json', 'keyvalue' => "TextColumn::make('{$fieldName}')"
-                . "->limit(50)"
-                . "->tooltip(function (\$state): ?string {
-                           return strlen(\$state) > 50 ? \$state : null;
-                         })",
+                .'->limit(50)'
+                .'->tooltip(function ($state): ?string {
+                           return strlen($state) > 50 ? $state : null;
+                         })',
             'enum' => "TextColumn::make('{$fieldName}')"
-                . "->badge()",
+                .'->badge()',
             'boolean', 'checkbox' => "ToggleColumn::make('{$fieldName}')",
             'slider', 'range' => "TextColumn::make('{$fieldName}')"
-                . "->numeric()",
+                .'->numeric()',
             'toggleButtons' => "TextColumn::make('{$fieldName}')"
-                . "->badge()",
+                .'->badge()',
             'date' => "TextColumn::make('{$fieldName}')"
-                . "->date()",
+                .'->date()',
             'datetime' => "TextColumn::make('{$fieldName}')"
-                . "->dateTime()",
+                .'->dateTime()',
             'time' => "TextColumn::make('{$fieldName}')"
-                . "->time()",
+                .'->time()',
             'decimal', 'float', 'double' => "TextColumn::make('{$fieldName}')"
-                . (str_contains($fieldName, 'price') || str_contains($fieldName, 'preco') || str_contains($fieldName, 'valor')
+                .(str_contains($fieldName, 'price') || str_contains($fieldName, 'preco') || str_contains($fieldName, 'valor')
                     ? "->money('BRL')"
-                    : "->numeric(2)"),
+                    : '->numeric(2)'),
             'integer', 'bigInteger' => "TextColumn::make('{$fieldName}')"
-                . "->numeric(0)",
+                .'->numeric(0)',
             'color' => "ColorColumn::make('{$fieldName}')",
             'image' => "ImageColumn::make('{$fieldName}')"
-                . "->circular()",
-            'foreignId' => "TextColumn::make('" . str_replace('_id', '', $fieldName) . ".name')",
+                .'->circular()',
+            'foreignId' => "TextColumn::make('".str_replace('_id', '', $fieldName).".name')",
             'tags' => "TextColumn::make('{$fieldName}')"
-                . "->badge()",
+                .'->badge()',
             default => "TextColumn::make('{$fieldName}')",
         };
 
@@ -59,7 +59,7 @@ class TableComponentGenerator
     /**
      * Generates a table filter based on the field type
      *
-     * @param array<string, string> $validationRules
+     * @param  array<string, string>  $validationRules
      */
     public function generateFilter(string $fieldName, string $fieldType, array $validationRules = []): ?string
     {
@@ -67,16 +67,16 @@ class TableComponentGenerator
             'boolean', 'checkbox' => "TernaryFilter::make('{$fieldName}')",
             'toggleButtons' => "SelectFilter::make('{$fieldName}')",
             'foreignId' => "SelectFilter::make('{$fieldName}')"
-                . "->relationship('" . str_replace('_id', '', $fieldName) . "', 'name')",
+                ."->relationship('".str_replace('_id', '', $fieldName)."', 'name')",
             'select', 'enum' => "SelectFilter::make('{$fieldName}')",
             'date', 'datetime' => "Filter::make('{$fieldName}')"
-                . "->form(["
-                . "DatePicker::make('{$fieldName}_from')"
-                . "->label('Start date'),"
-                . "DatePicker::make('{$fieldName}_until')"
-                . "->label('End date')"
-                . "])"
-                . "->query(function (Builder \$query, array \$data): Builder {
+                .'->form(['
+                ."DatePicker::make('{$fieldName}_from')"
+                ."->label('Start date'),"
+                ."DatePicker::make('{$fieldName}_until')"
+                ."->label('End date')"
+                .'])'
+                ."->query(function (Builder \$query, array \$data): Builder {
                             return \$query
                                 ->when(
                                     \$data['{$fieldName}_from'],
@@ -88,15 +88,15 @@ class TableComponentGenerator
                                 );
                         })",
             'decimal', 'float', 'double', 'integer', 'bigInteger', 'slider', 'range' => "Filter::make('{$fieldName}')"
-                . "->form(["
-                . "TextInput::make('{$fieldName}_from')"
-                . "->label('Minimum value')"
-                . "->numeric(),"
-                . "TextInput::make('{$fieldName}_until')"
-                . "->label('Maximum value')"
-                . "->numeric()"
-                . "])"
-                . "->query(function (Builder \$query, array \$data): Builder {
+                .'->form(['
+                ."TextInput::make('{$fieldName}_from')"
+                ."->label('Minimum value')"
+                .'->numeric(),'
+                ."TextInput::make('{$fieldName}_until')"
+                ."->label('Maximum value')"
+                .'->numeric()'
+                .'])'
+                ."->query(function (Builder \$query, array \$data): Builder {
                             return \$query
                                 ->when(
                                     \$data['{$fieldName}_from'],
@@ -148,8 +148,8 @@ class TableComponentGenerator
     /**
      * Updates the table method with the generated columns and filters
      *
-     * @param array<int, string> $tableColumns
-     * @param array<int, string> $filterFields
+     * @param  array<int, string>  $tableColumns
+     * @param  array<int, string>  $filterFields
      */
     public function updateTableMethod(string $content, array $tableColumns, array $filterFields, CodeValidator $validator): string
     {
@@ -198,7 +198,7 @@ class TableComponentGenerator
                 $newTableFunction .= "            ]);\n"; // toolbarActions closing + semicolon
 
                 // Function closing
-                $newTableFunction .= "    }";
+                $newTableFunction .= '    }';
 
                 $content = substr_replace($content, $newTableFunction, $tableStartPos, $closeBracePos - $tableStartPos + 1);
             }

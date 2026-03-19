@@ -4,7 +4,7 @@ use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeValidator;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\FormComponentGenerator;
 
 beforeEach(function () {
-    $this->generator = new FormComponentGenerator();
+    $this->generator = new FormComponentGenerator;
 });
 
 // --- Field type → component mapping ---
@@ -324,7 +324,7 @@ PHP;
         "Toggle::make('is_active')",
     ];
 
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
     $result = $this->generator->updateFormMethod($content, $fields, $validator);
 
     expect($result)
@@ -351,7 +351,7 @@ PHP;
         "TextInput::make('name')",
     ];
 
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
     $result = $this->generator->updateFormMethod($content, $fields, $validator);
 
     expect($result)
@@ -361,7 +361,7 @@ PHP;
 
 it('returns content unchanged when form fields are empty', function () {
     $content = '<?php class Test { public static function form(Form $form): Form { return $form->schema([]); } }';
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateFormMethod($content, [], $validator);
     expect($result)->toBe($content);

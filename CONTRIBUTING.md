@@ -29,7 +29,7 @@ We love receiving suggestions for new features! To request a new feature, please
 3. Create a branch for your changes: `git checkout -b feature/feature-name` or `fix/bug-name`
 4. Make your changes
 5. Run the tests, if available
-6. Format the code using PHP CS Fixer: `composer cs-fix`
+6. Format the code using Laravel Pint: `composer format`
 7. Commit your changes: `git commit -m 'Clear description of the change'`
 8. Push to your branch: `git push origin feature/feature-name`
 9. Open a pull request on the original repository

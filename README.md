@@ -15,7 +15,7 @@ A Laravel package that generates **complete CRUD resources** for Filament admin 
 - **Smart component mapping** — Each field type maps to the most appropriate Filament form component, table column, and filter
 - **Relationship support** — `belongsTo`, `belongsToMany`, `hasOne`, and `hasMany` with automatic foreign keys and pivot tables
 - **Built-in validation** — Apply rules like `required`, `min`, `max`, `email`, `unique`, `between`, and more directly in the command
-- **Automatic code formatting** — Generated files are formatted with PHP CS Fixer (PSR-12)
+- **Automatic code formatting** — Generated files are formatted with Laravel Pint (PSR-12)
 - **Filament v4/v5 compatible** — Supports both the separate Schemas/Tables directory structure and inline resources
 
 ---
@@ -44,10 +44,10 @@ php artisan vendor:publish --tag="filament-crud-generator-config"
 
 This publishes `config/filament-crud-generator.php` where you can customize namespaces, auto-migration, and auto-formatting behavior.
 
-You can also publish the PHP CS Fixer configuration:
+You can also publish the Laravel Pint configuration:
 
 ```bash
-php artisan vendor:publish --tag="php-cs-fixer-config"
+php artisan vendor:publish --tag="pint-config"
 ```
 
 ## Quick Start
@@ -84,7 +84,7 @@ php artisan make:filament-crud {model} [options]
 | `--relations=` | Semicolon-separated list of relationships. See [Relationships](#relationships) |
 | `--softDeletes` | Add `SoftDeletes` trait and `softDeletes()` migration column |
 | `--no-migrate` | Skip running migrations after generation |
-| `--no-format` | Skip PHP CS Fixer auto-formatting |
+| `--no-format` | Skip Laravel Pint auto-formatting |
 | `--clean-resources` | Clean and regenerate all existing Filament resources |
 
 ### Field Format
@@ -320,11 +320,8 @@ return [
     // Run migrations automatically after generation (override with --no-migrate)
     'auto_migrate' => true,
 
-    // Format generated code with PHP CS Fixer (override with --no-format)
+    // Format generated code with Laravel Pint (override with --no-format)
     'auto_format' => true,
-
-    // PHP CS Fixer configuration file name
-    'cs_fixer_config_file' => '.php-cs-fixer.dist.php',
 ];
 ```
 
@@ -347,7 +344,7 @@ For each model, the generator creates or updates:
 - **Smart imports** — Only the required Filament component classes are imported, with no duplicates
 - **Table filters** — Boolean fields get ternary filters; date/numeric fields get range filters; foreign keys get select filters
 - **Table actions** — Edit action and bulk delete are automatically configured
-- **Code formatting** — All generated files are formatted with PHP CS Fixer (PSR-12)
+- **Code formatting** — All generated files are formatted with Laravel Pint (PSR-12)
 
 ---
 
@@ -363,7 +360,7 @@ Skips running `php artisan migrate` after file generation. Useful when you want 
 
 ### `--no-format`
 
-Skips PHP CS Fixer auto-formatting. Useful in CI environments or when you prefer to format manually. You can also disable auto-formatting globally in the config file.
+Skips Laravel Pint auto-formatting. Useful in CI environments or when you prefer to format manually. You can also disable auto-formatting globally in the config file.
 
 ### `--clean-resources`
 
@@ -395,7 +392,7 @@ composer test
 composer analyse
 
 # Format code (PSR-12)
-composer cs-fix
+composer format
 ```
 
 ### Running a single test

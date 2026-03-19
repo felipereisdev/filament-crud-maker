@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 test('command is registered', function () {
     $commands = Artisan::all();
@@ -15,11 +17,11 @@ test('requires model name', function () {
 });
 
 test('displays input information', function () {
-    $output = new \Symfony\Component\Console\Output\BufferedOutput();
+    $output = new BufferedOutput;
 
     try {
-        /** @var \Illuminate\Contracts\Console\Kernel $kernel */
-        $kernel = $this->app->make(\Illuminate\Contracts\Console\Kernel::class);
+        /** @var Kernel $kernel */
+        $kernel = $this->app->make(Kernel::class);
         $kernel->call('make:filament-crud', [
             'model' => 'Post',
             '--fields' => 'title:string,body:text',
@@ -27,7 +29,7 @@ test('displays input information', function () {
             '--no-migrate' => true,
             '--no-format' => true,
         ], $output);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         // Command fails during generation because make:filament-resource is not available in test environment
     }
 

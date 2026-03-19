@@ -13,17 +13,16 @@ class ResourceUpdater
         private readonly ImportManager $importManager,
         private readonly CodeValidator $codeValidator,
         private readonly ?Command $command = null
-    ) {
-    }
+    ) {}
 
     /**
      * Updates a Filament resource with fields, columns and filters
      *
-     * @param array<int, string> $fields
+     * @param  array<int, string>  $fields
      */
     public function update(string $model, array $fields, bool $softDeletes = false): bool
     {
-        $resourcePath = app_path('Filament/Resources/' . $model . 'Resource.php');
+        $resourcePath = app_path('Filament/Resources/'.$model.'Resource.php');
 
         if (! File::exists($resourcePath)) {
             $this->log("Resource file not found: {$resourcePath}", 'error');
@@ -34,16 +33,16 @@ class ResourceUpdater
         // Process fields
         [$formFields, $tableColumns, $filterFields, $formComponents, $tableComponents] = $this->processFields($fields);
 
-        $this->log("Total form fields: " . count($formFields));
-        $this->log("Total table columns: " . count($tableColumns));
-        $this->log("Total filters: " . count($filterFields));
+        $this->log('Total form fields: '.count($formFields));
+        $this->log('Total table columns: '.count($tableColumns));
+        $this->log('Total filters: '.count($filterFields));
 
         // Detect v4 directory structure (Schemas/ + Tables/)
-        $resourceDir = app_path('Filament/Resources/' . $model . 'Resource');
-        $schemaPath = $resourceDir . '/Schemas/' . $model . 'Form.php';
-        $tablePath = $resourceDir . '/Tables/' . $model . 'sTable.php';
+        $resourceDir = app_path('Filament/Resources/'.$model.'Resource');
+        $schemaPath = $resourceDir.'/Schemas/'.$model.'Form.php';
+        $tablePath = $resourceDir.'/Tables/'.$model.'sTable.php';
 
-        if (File::isDirectory($resourceDir . '/Schemas') && File::isDirectory($resourceDir . '/Tables')) {
+        if (File::isDirectory($resourceDir.'/Schemas') && File::isDirectory($resourceDir.'/Tables')) {
             $this->log('Separate Schemas/Tables structure detected');
 
             return $this->updateV4Structure(
@@ -69,7 +68,7 @@ class ResourceUpdater
     /**
      * Processes fields and returns separate arrays for form and table
      *
-     * @param array<int, string> $fields
+     * @param  array<int, string>  $fields
      * @return array{0: array<int, string>, 1: array<int, string>, 2: array<int, string>, 3: array<int, string>, 4: array<int, string>}
      */
     private function processFields(array $fields): array
@@ -112,9 +111,9 @@ class ResourceUpdater
                 }
             }
 
-            $this->log("Processing field: {$fieldName} of type {$fieldType}" .
-                       ($defaultValue ? " with default value {$defaultValue}" : '') .
-                       (! empty($validationRules) ? ' and ' . count($validationRules) . ' validations' : ''));
+            $this->log("Processing field: {$fieldName} of type {$fieldType}".
+                       ($defaultValue ? " with default value {$defaultValue}" : '').
+                       (! empty($validationRules) ? ' and '.count($validationRules).' validations' : ''));
 
             // Generate form component
             $formComponent = $this->formGenerator->generate($fieldName, $fieldType, $validationRules, $defaultValue);
@@ -143,7 +142,7 @@ class ResourceUpdater
 
         $allComponents = array_unique(array_merge($formComponents, $tableComponents));
         if (! empty($allComponents)) {
-            $this->log('Components used: ' . implode(', ', $allComponents));
+            $this->log('Components used: '.implode(', ', $allComponents));
         }
 
         return [$formFields, $tableColumns, $filterFields, $formComponents, $tableComponents];
@@ -152,11 +151,11 @@ class ResourceUpdater
     /**
      * Updates separate Schema and Table files (Filament v4 structure)
      *
-     * @param array<int, string> $formFields
-     * @param array<int, string> $tableColumns
-     * @param array<int, string> $filterFields
-     * @param array<int, string> $formComponents
-     * @param array<int, string> $tableComponents
+     * @param  array<int, string>  $formFields
+     * @param  array<int, string>  $tableColumns
+     * @param  array<int, string>  $filterFields
+     * @param  array<int, string>  $formComponents
+     * @param  array<int, string>  $tableComponents
      */
     private function updateV4Structure(
         string $model,
@@ -189,8 +188,8 @@ class ResourceUpdater
     /**
      * Updates the Schema file with the form fields
      *
-     * @param array<int, string> $formFields
-     * @param array<int, string> $formComponents
+     * @param  array<int, string>  $formFields
+     * @param  array<int, string>  $formComponents
      */
     private function updateSchemaFile(string $model, string $schemaPath, array $formFields, array $formComponents): bool
     {
@@ -200,7 +199,7 @@ class ResourceUpdater
         $content = $this->formGenerator->updateFormMethod($content, $formFields, $this->codeValidator);
         $content = $this->importManager->addFormFileImports($content, array_unique($formComponents));
 
-        $tempFile = storage_path('app/debug_schema_' . $model . '.php');
+        $tempFile = storage_path('app/debug_schema_'.$model.'.php');
         File::put($tempFile, $content);
         $this->log("Debug version of Schema saved at: {$tempFile}");
 
@@ -219,9 +218,9 @@ class ResourceUpdater
     /**
      * Updates the Table file with columns, filters and actions
      *
-     * @param array<int, string> $tableColumns
-     * @param array<int, string> $filterFields
-     * @param array<int, string> $tableComponents
+     * @param  array<int, string>  $tableColumns
+     * @param  array<int, string>  $filterFields
+     * @param  array<int, string>  $tableComponents
      */
     private function updateTableFile(
         string $model,
@@ -237,7 +236,7 @@ class ResourceUpdater
         $content = $this->tableGenerator->updateTableMethod($content, $tableColumns, $filterFields, $this->codeValidator);
         $content = $this->importManager->addTableFileImports($content, array_unique($tableComponents), $softDeletes);
 
-        $tempFile = storage_path('app/debug_table_' . $model . '.php');
+        $tempFile = storage_path('app/debug_table_'.$model.'.php');
         File::put($tempFile, $content);
         $this->log("Debug version of Table saved at: {$tempFile}");
 
@@ -256,10 +255,10 @@ class ResourceUpdater
     /**
      * Updates the inline resource (original/fallback behavior)
      *
-     * @param array<int, string> $formFields
-     * @param array<int, string> $tableColumns
-     * @param array<int, string> $filterFields
-     * @param array<int, string> $usedComponents
+     * @param  array<int, string>  $formFields
+     * @param  array<int, string>  $tableColumns
+     * @param  array<int, string>  $filterFields
+     * @param  array<int, string>  $usedComponents
      */
     private function updateInlineResource(
         string $model,
@@ -283,7 +282,7 @@ class ResourceUpdater
 
         $content = $this->importManager->addRequiredImports($content, $model, $usedComponents, $softDeletes);
 
-        $tempFile = storage_path('app/debug_resource_' . $model . '.php');
+        $tempFile = storage_path('app/debug_resource_'.$model.'.php');
         File::put($tempFile, $content);
         $this->log("Debug version saved at: {$tempFile}");
 

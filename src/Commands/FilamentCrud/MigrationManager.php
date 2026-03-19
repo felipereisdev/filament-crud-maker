@@ -8,19 +8,17 @@ use Illuminate\Support\Str;
 
 class MigrationManager
 {
-    public function __construct(private readonly ?Command $command = null)
-    {
-    }
+    public function __construct(private readonly ?Command $command = null) {}
 
     /**
      * Updates the migration with the specified fields
      *
-     * @param array<int, string> $fields
-     * @param array<int, string> $relationArray
+     * @param  array<int, string>  $fields
+     * @param  array<int, string>  $relationArray
      */
     public function updateMigration(string $model, array $fields, array $relationArray = []): bool
     {
-        $migrationFiles = File::glob(database_path('migrations/*_create_' . Str::snake(Str::plural($model)) . '_table.php'));
+        $migrationFiles = File::glob(database_path('migrations/*_create_'.Str::snake(Str::plural($model)).'_table.php'));
 
         if (empty($migrationFiles)) {
             $this->log('Migration file not found.', 'error');
@@ -75,7 +73,7 @@ class MigrationManager
                     $fieldDefinition .= ", {$typeParams}";
                 }
 
-                $fieldDefinition .= ")";
+                $fieldDefinition .= ')';
 
                 // Process validations and defaults
                 $isNullable = false;
@@ -101,20 +99,20 @@ class MigrationManager
 
                 // Apply nullable if specified
                 if ($isNullable) {
-                    $fieldDefinition .= "->nullable()";
+                    $fieldDefinition .= '->nullable()';
                 }
 
                 // Apply unique if specified
                 if ($isUnique) {
-                    $fieldDefinition .= "->unique()";
+                    $fieldDefinition .= '->unique()';
                 }
 
                 // Apply default value if specified
                 if ($defaultValue !== null) {
-                    $fieldDefinition .= "->default(" . $defaultValue . ")";
+                    $fieldDefinition .= '->default('.$defaultValue.')';
                 }
 
-                $fieldDefinition .= ";";
+                $fieldDefinition .= ';';
                 $fieldDefinitions .= $fieldDefinition;
             }
         }
@@ -123,10 +121,10 @@ class MigrationManager
         if (! empty($relationArray)) {
             foreach ($relationArray as $relation) {
                 if (strpos($relation, ':') !== false) {
-                    list($relationType, $relatedModel) = explode(':', $relation);
+                    [$relationType, $relatedModel] = explode(':', $relation);
 
                     if ($relationType === 'belongsTo') {
-                        $fieldDefinitions .= "\n            \$table->foreignId('" . Str::snake($relatedModel) . "_id')->constrained()->onDelete('cascade');";
+                        $fieldDefinitions .= "\n            \$table->foreignId('".Str::snake($relatedModel)."_id')->constrained()->onDelete('cascade');";
                     }
                 }
             }
@@ -143,7 +141,7 @@ class MigrationManager
             $modelPlural = Str::snake(Str::singular($model));
             foreach ($relationArray as $relation) {
                 if (strpos($relation, ':') !== false) {
-                    list($relationType, $relatedModel) = explode(':', $relation);
+                    [$relationType, $relatedModel] = explode(':', $relation);
 
                     if ($relationType === 'belongsToMany') {
                         $relatedModelPlural = Str::snake(Str::singular($relatedModel));
@@ -167,7 +165,7 @@ class MigrationManager
         }
 
         // Insert the fields into the migration
-        $newContent = substr($content, 0, $endPos) . $fieldDefinitions . "\n" . substr($content, $endPos);
+        $newContent = substr($content, 0, $endPos).$fieldDefinitions."\n".substr($content, $endPos);
 
         // If there are pivot tables, add their definitions
         if (! empty($pivotTables)) {
@@ -182,14 +180,14 @@ class MigrationManager
             }
 
             // Insert pivot tables after the main table
-            $endOfFirstCreate = strpos($newContent, "});", $endPos) + 3;
-            $newContent = substr($newContent, 0, $endOfFirstCreate) . $pivotContent . substr($newContent, $endOfFirstCreate);
+            $endOfFirstCreate = strpos($newContent, '});', $endPos) + 3;
+            $newContent = substr($newContent, 0, $endOfFirstCreate).$pivotContent.substr($newContent, $endOfFirstCreate);
 
             // Update the down() method to drop the pivot tables
-            $downPos = strpos($newContent, "down()");
+            $downPos = strpos($newContent, 'down()');
 
             if ($downPos !== false) {
-                $dropPos = strpos($newContent, "Schema::dropIfExists", $downPos);
+                $dropPos = strpos($newContent, 'Schema::dropIfExists', $downPos);
 
                 if ($dropPos !== false) {
                     $dropStatements = '';
@@ -197,7 +195,7 @@ class MigrationManager
                         $dropStatements .= "\n        Schema::dropIfExists('{$pivot['table']}');";
                     }
 
-                    $newContent = substr($newContent, 0, $dropPos) . $dropStatements . "\n" . substr($newContent, $dropPos);
+                    $newContent = substr($newContent, 0, $dropPos).$dropStatements."\n".substr($newContent, $dropPos);
                 }
             }
         }

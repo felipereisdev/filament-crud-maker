@@ -4,7 +4,7 @@ use Freis\FilamentCrudGenerator\Commands\FilamentCrud\CodeValidator;
 use Freis\FilamentCrudGenerator\Commands\FilamentCrud\TableComponentGenerator;
 
 beforeEach(function () {
-    $this->generator = new TableComponentGenerator();
+    $this->generator = new TableComponentGenerator;
 });
 
 // --- Column type mapping ---
@@ -436,7 +436,7 @@ PHP;
 
     $columns = ["TextColumn::make('name')"];
     $filters = [];
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, $columns, $filters, $validator);
 
@@ -465,7 +465,7 @@ PHP;
 
     $columns = ["TextColumn::make('name')"];
     $filters = ["TernaryFilter::make('is_active')"];
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, $columns, $filters, $validator);
 
@@ -488,7 +488,7 @@ class ProductsTable
 PHP;
 
     $columns = ["TextColumn::make('name')"];
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, $columns, [], $validator);
 
@@ -499,7 +499,7 @@ PHP;
 
 it('returns content unchanged when columns and filters are empty', function () {
     $content = '<?php class Test { public static function table(Table $table): Table { return $table->columns([]); } }';
-    $validator = new CodeValidator();
+    $validator = new CodeValidator;
 
     $result = $this->generator->updateTableMethod($content, [], [], $validator);
     expect($result)->toBe($content);
