@@ -34,6 +34,11 @@ class FormComponentGenerator
             'richtext', 'editor' => "RichEditor::make('{$fieldName}')",
             'markdown' => "MarkdownEditor::make('{$fieldName}')",
             'tags' => "TagsInput::make('{$fieldName}')",
+            'code', 'json' => "CodeEditor::make('{$fieldName}')",
+            'slider', 'range' => "Slider::make('{$fieldName}')",
+            'toggleButtons' => "ToggleButtons::make('{$fieldName}')",
+            'keyvalue' => "KeyValue::make('{$fieldName}')",
+            'checkbox' => "Checkbox::make('{$fieldName}')",
             'decimal', 'float', 'double' => "TextInput::make('{$fieldName}')"
                 . "->numeric()"
                 . "->inputMode('decimal')",
@@ -108,6 +113,11 @@ class FormComponentGenerator
             'richtext', 'editor' => 'RichEditor',
             'markdown' => 'MarkdownEditor',
             'tags' => 'TagsInput',
+            'code', 'json' => 'CodeEditor',
+            'slider', 'range' => 'Slider',
+            'toggleButtons' => 'ToggleButtons',
+            'keyvalue' => 'KeyValue',
+            'checkbox' => 'Checkbox',
             default => 'TextInput',
         };
     }

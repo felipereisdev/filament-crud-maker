@@ -229,6 +229,21 @@ it('contains DeleteBulkAction in import map', function () {
         ->and($importMap['DeleteBulkAction'])->toBe('Filament\Actions\DeleteBulkAction');
 });
 
+it('contains new form components in import map', function (string $component, string $expectedPath) {
+    $reflection = new ReflectionClass(ImportManager::class);
+    $importMap = $reflection->getConstant('IMPORT_MAP');
+
+    expect($importMap)
+        ->toHaveKey($component)
+        ->and($importMap[$component])->toBe($expectedPath);
+})->with([
+    ['CodeEditor', 'Filament\Forms\Components\CodeEditor'],
+    ['Slider', 'Filament\Forms\Components\Slider'],
+    ['ToggleButtons', 'Filament\Forms\Components\ToggleButtons'],
+    ['KeyValue', 'Filament\Forms\Components\KeyValue'],
+    ['Checkbox', 'Filament\Forms\Components\Checkbox'],
+]);
+
 // --- addFormFileImports() ---
 
 it('adds Schema import in form file', function () {
