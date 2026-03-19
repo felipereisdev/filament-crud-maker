@@ -120,7 +120,7 @@ class TableComponentGenerator
                 'image' => 'ImageColumn',
                 'color' => 'ColorColumn',
                 'icon' => 'IconColumn',
-                'enum', 'tags' => 'BadgeColumn',
+                'enum', 'tags' => 'TextColumn',
                 default => 'TextColumn',
             };
         } elseif ($context === 'filter') {
@@ -169,17 +169,17 @@ class TableComponentGenerator
                     $newTableFunction .= "            ])\n";
                 }
 
-                // Actions - manter as existentes ou adicionar padrão
-                $newTableFunction .= "            ->actions([\n";
-                $newTableFunction .= "                Tables\Actions\EditAction::make(),\n";
+                // Actions - usar Filament v4 API
+                $newTableFunction .= "            ->recordActions([\n";
+                $newTableFunction .= "                EditAction::make(),\n";
                 $newTableFunction .= "            ])\n";
 
-                // BulkActions - garantir que a estrutura seja corretamente fechada
-                $newTableFunction .= "            ->bulkActions([\n";
-                $newTableFunction .= "                Tables\Actions\BulkActionGroup::make([\n";
-                $newTableFunction .= "                    Tables\Actions\DeleteBulkAction::make(),\n";
+                // BulkActions - usar Filament v4 API
+                $newTableFunction .= "            ->toolbarActions([\n";
+                $newTableFunction .= "                BulkActionGroup::make([\n";
+                $newTableFunction .= "                    DeleteBulkAction::make(),\n";
                 $newTableFunction .= "                ])\n"; // Fechamento do BulkActionGroup
-                $newTableFunction .= "            ]);\n"; // Fechamento do bulkActions + ponto e vírgula
+                $newTableFunction .= "            ]);\n"; // Fechamento do toolbarActions + ponto e vírgula
 
                 // Fechamento da função
                 $newTableFunction .= "    }";

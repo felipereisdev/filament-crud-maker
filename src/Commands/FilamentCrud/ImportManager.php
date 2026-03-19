@@ -29,7 +29,9 @@ class ImportManager
         'ToggleColumn' => 'Filament\Tables\Columns\ToggleColumn',
         'ColorColumn' => 'Filament\Tables\Columns\ColorColumn',
         'IconColumn' => 'Filament\Tables\Columns\IconColumn',
-        'BadgeColumn' => 'Filament\Tables\Columns\BadgeColumn',
+        'EditAction' => 'Filament\Actions\EditAction',
+        'BulkActionGroup' => 'Filament\Actions\BulkActionGroup',
+        'DeleteBulkAction' => 'Filament\Actions\DeleteBulkAction',
         'Filter' => 'Filament\Tables\Filters\Filter',
         'SelectFilter' => 'Filament\Tables\Filters\SelectFilter',
         'TernaryFilter' => 'Filament\Tables\Filters\TernaryFilter',
@@ -88,6 +90,11 @@ class ImportManager
             $usedComponents[] = 'TextInput';
         }
 
+        // Ensure action components are always imported
+        $usedComponents[] = 'EditAction';
+        $usedComponents[] = 'BulkActionGroup';
+        $usedComponents[] = 'DeleteBulkAction';
+
         // Gerar importações para os componentes usados
         $imports = [];
         foreach ($usedComponents as $component) {
@@ -112,10 +119,8 @@ class ImportManager
             'use App\Filament\Resources\\' . $model . 'Resource\Pages;',
             'use App\Filament\Resources\\' . $model . 'Resource\RelationManagers;',
             'use App\Models\\' . $model . ';',
-            'use Filament\Forms;',
-            'use Filament\Forms\Form;',
             'use Filament\Resources\Resource;',
-            'use Filament\Tables;',
+            'use Filament\Schemas\Schema;',
             'use Filament\Tables\Table;',
         ];
 

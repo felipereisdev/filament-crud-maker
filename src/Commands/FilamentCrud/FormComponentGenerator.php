@@ -55,7 +55,7 @@ class FormComponentGenerator
                         : "->maxLength({$value})",
                     'email' => '->email()',
                     'nullable' => '->nullable()',
-                    'unique' => '->unique(ignoreRecord: true)',
+                    'unique' => '->unique()',
                     'between' => str_contains($value, ',')
                         ? "->minValue(" . explode(',', $value)[0] . ")->maxValue(" . explode(',', $value)[1] . ")"
                         : '',
@@ -119,14 +119,14 @@ class FormComponentGenerator
             return $content;
         }
 
-        if (preg_match('/public\s+static\s+function\s+form\s*\(\s*Form\s+\$form\s*\)\s*:.*?\{/s', $content, $formMatches, PREG_OFFSET_CAPTURE)) {
+        if (preg_match('/public\s+static\s+function\s+(?:form\s*\(\s*Form\s+\$form\s*\)|configure\s*\(\s*Schema\s+\$schema\s*\))\s*:.*?\{/s', $content, $formMatches, PREG_OFFSET_CAPTURE)) {
             $formStartPos = $formMatches[0][1];
             $openBracePos = strpos($content, '{', $formStartPos);
             $closeBracePos = $validator->findMatchingCloseBrace($content, $openBracePos);
 
             if ($closeBracePos !== false) {
                 $newFormFunction = substr($content, $formStartPos, $openBracePos - $formStartPos + 1);
-                $newFormFunction .= "\n        return \$form\n            ->schema([\n";
+                $newFormFunction .= "\n        return \$schema\n            ->components([\n";
 
                 foreach ($formFields as $field) {
                     $newFormFunction .= "                {$field},\n";
