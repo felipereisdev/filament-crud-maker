@@ -55,3 +55,27 @@
   - The `insertImportsIntoContent()` helper uses a generic `namespace ... class` pattern instead of hardcoded `App\Filament\Resources` namespace — reusable for any PHP file
   - Table filters can use form components (DatePicker, TextInput) inside `->form([])` — these form component imports must go into the Table file, not the Schema file
   - PHPStan error count dropped from 47 to 46 (one pre-existing error resolved by the refactoring)
+
+## US-005: Update version strings and documentation
+- Updated `MakeFilamentCrud.php` line 39: `$description` now references "Filament v4" instead of "Filament v3"
+- Updated `CLAUDE.md`: Project Overview references Filament v4; Commands section uses Pest (`vendor/bin/pest`) instead of PHPUnit and adds `composer analyse`; Key Dependencies updated to PHP ^8.3, Laravel ^11.28|^12, Filament ^4.0, added Pest ^3.0 and Larastan ^3.0
+- Updated `README.md`: Title and intro paragraph reference Filament v4 instead of v3
+- Verified zero remaining "Filament v3" references across the codebase
+- **Files changed:** src/Commands/MakeFilamentCrud.php, CLAUDE.md, README.md
+- **Learnings for future iterations:**
+  - CLAUDE.md is in the user's global gitignore (`~/.gitignore_global`) — requires `git add -f` to stage
+  - PHPStan error count remains at 46 (no new errors introduced, documentation-only changes)
+
+## US-006: Unit tests with Pest for component generators and utilities
+- Created tests/Unit/FormComponentGeneratorTest.php (83 tests): all 19+ field types → correct component, all 12 validation rules, unique without ignoreRecord, default values by type (string/boolean/numeric), getComponentType() for all types, updateFormMethod() with Form and Schema signatures
+- Created tests/Unit/TableComponentGeneratorTest.php (62 tests): all column types, enum/tags → TextColumn with badge (no BadgeColumn), price/preco/valor → money('BRL'), decimal → numeric(2), integer → numeric(0), long text → limit(50)->tooltip(), foreignId → relation.name, searchable/sortable by type, all filter types, text fields filter only for status/type/category, getComponentType() columns and filters, updateTableMethod() with recordActions/toolbarActions and configure signature
+- Created tests/Unit/ImportManagerTest.php (19 tests): removeDuplicateImports(), addRequiredImports() with components/Schema/actions/Builder/SoftDeletes, IMPORT_MAP does not contain BadgeColumn, IMPORT_MAP contains EditAction/BulkActionGroup/DeleteBulkAction, addFormFileImports() with Schema-only imports, addTableFileImports() with action/SoftDeletes imports
+- Created tests/Unit/CodeValidatorTest.php (19 tests): validateSyntax() balanced/unbalanced/mixed/empty/mismatched, findMatchingCloseBrace() correct position/nested/inner/deep/not found
+- All 171 tests pass (237 assertions) in 0.43s
+- PHPStan error count remains at 46 (no new errors — PHPStan only analyzes src/)
+- **Files changed:** tests/Unit/FormComponentGeneratorTest.php (new), tests/Unit/TableComponentGeneratorTest.php (new), tests/Unit/ImportManagerTest.php (new), tests/Unit/CodeValidatorTest.php (new)
+- **Learnings for future iterations:**
+  - Unit tests for these generators don't need Orchestra Testbench — they're pure PHP classes with no Laravel dependencies, but the global `uses(TestCase::class)->in(__DIR__)` binding applies automatically
+  - ReflectionClass can access `private const array IMPORT_MAP` for direct constant assertions
+  - Pest `->with([])` datasets work well for parameterized tests on component type mappings
+  - The `strpos()` call in `findMatchingCloseBrace` returns `int|false` which makes position arithmetic clean for test assertions
