@@ -5,7 +5,7 @@ namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 class TableComponentGenerator
 {
     /**
-     * Gera uma coluna de tabela com base no tipo de campo
+     * Generates a table column based on the field type
      */
     public function generateColumn(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
@@ -40,7 +40,7 @@ class TableComponentGenerator
             default => "TextColumn::make('{$fieldName}')",
         };
 
-        // Adicionar propriedades comuns para colunas
+        // Add common properties for columns
         if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'enum', 'email', 'url'])) {
             $column .= '->searchable()->sortable()';
         } elseif (in_array($fieldType, ['integer', 'bigInteger', 'decimal', 'float', 'double', 'date', 'datetime', 'time'])) {
@@ -51,7 +51,7 @@ class TableComponentGenerator
     }
 
     /**
-     * Gera um filtro de tabela com base no tipo de campo
+     * Generates a table filter based on the field type
      */
     public function generateFilter(string $fieldName, string $fieldType, array $validationRules = []): ?string
     {
@@ -63,9 +63,9 @@ class TableComponentGenerator
             'date', 'datetime' => "Filter::make('{$fieldName}')"
                 . "->form(["
                 . "DatePicker::make('{$fieldName}_from')"
-                . "->label('Data inicial'),"
+                . "->label('Start date'),"
                 . "DatePicker::make('{$fieldName}_until')"
-                . "->label('Data final')"
+                . "->label('End date')"
                 . "])"
                 . "->query(function (Builder \$query, array \$data): Builder {
                             return \$query
@@ -81,10 +81,10 @@ class TableComponentGenerator
             'decimal', 'float', 'double', 'integer', 'bigInteger' => "Filter::make('{$fieldName}')"
                 . "->form(["
                 . "TextInput::make('{$fieldName}_from')"
-                . "->label('Valor mínimo')"
+                . "->label('Minimum value')"
                 . "->numeric(),"
                 . "TextInput::make('{$fieldName}_until')"
-                . "->label('Valor máximo')"
+                . "->label('Maximum value')"
                 . "->numeric()"
                 . "])"
                 . "->query(function (Builder \$query, array \$data): Builder {
@@ -110,7 +110,7 @@ class TableComponentGenerator
     }
 
     /**
-     * Retorna o tipo de componente de tabela com base no tipo de campo
+     * Returns the table component type based on the field type
      */
     public function getComponentType(string $fieldType, string $context = 'column'): string
     {
@@ -136,7 +136,7 @@ class TableComponentGenerator
     }
 
     /**
-     * Atualiza o método table com as colunas e filtros gerados
+     * Updates the table method with the generated columns and filters
      */
     public function updateTableMethod(string $content, array $tableColumns, array $filterFields, CodeValidator $validator): string
     {
@@ -153,14 +153,14 @@ class TableComponentGenerator
                 $newTableFunction = substr($content, $tableStartPos, $openBracePos - $tableStartPos + 1);
                 $newTableFunction .= "\n        return \$table\n";
 
-                // Colunas
+                // Columns
                 $newTableFunction .= "            ->columns([\n";
                 foreach ($tableColumns as $column) {
                     $newTableFunction .= "                {$column},\n";
                 }
                 $newTableFunction .= "            ])\n";
 
-                // Filtros
+                // Filters
                 if (! empty($filterFields)) {
                     $newTableFunction .= "            ->filters([\n";
                     foreach ($filterFields as $filter) {
@@ -169,19 +169,19 @@ class TableComponentGenerator
                     $newTableFunction .= "            ])\n";
                 }
 
-                // Actions - usar Filament v4 API
+                // Actions - using Filament v4 API
                 $newTableFunction .= "            ->recordActions([\n";
                 $newTableFunction .= "                EditAction::make(),\n";
                 $newTableFunction .= "            ])\n";
 
-                // BulkActions - usar Filament v4 API
+                // BulkActions - using Filament v4 API
                 $newTableFunction .= "            ->toolbarActions([\n";
                 $newTableFunction .= "                BulkActionGroup::make([\n";
                 $newTableFunction .= "                    DeleteBulkAction::make(),\n";
-                $newTableFunction .= "                ])\n"; // Fechamento do BulkActionGroup
-                $newTableFunction .= "            ]);\n"; // Fechamento do toolbarActions + ponto e vírgula
+                $newTableFunction .= "                ])\n"; // BulkActionGroup closing
+                $newTableFunction .= "            ]);\n"; // toolbarActions closing + semicolon
 
-                // Fechamento da função
+                // Function closing
                 $newTableFunction .= "    }";
 
                 $content = substr_replace($content, $newTableFunction, $tableStartPos, $closeBracePos - $tableStartPos + 1);

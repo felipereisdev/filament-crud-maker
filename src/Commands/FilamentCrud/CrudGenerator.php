@@ -18,7 +18,7 @@ class CrudGenerator
     }
 
     /**
-     * Gera um CRUD completo para o modelo especificado
+     * Generates a complete CRUD for the specified model
      */
     public function generate(
         string $model,
@@ -28,28 +28,28 @@ class CrudGenerator
         bool $skipMigrations = false,
         bool $skipCsFixer = false
     ): bool {
-        $this->log("Gerando CRUD para o modelo {$model}");
+        $this->log("Generating CRUD for model {$model}");
 
-        // Processar campos - melhorado para lidar com campos complexos
+        // Process fields - improved to handle complex fields
         $fieldArray = [];
         if (! empty($fields)) {
-            // Dividir por vírgula, mas respeitando valores que contêm vírgulas dentro de regras
+            // Split by comma, but respecting values that contain commas within rules
             $pattern = '/(?:[^,"]|"(?:\\\\.|[^"\\\\])*")+/';
             preg_match_all($pattern, $fields, $matches);
             $fieldArray = $matches[0];
 
-            // Limpar possíveis espaços extras
+            // Clean possible extra spaces
             foreach ($fieldArray as $key => $field) {
                 $fieldArray[$key] = trim($field);
             }
         }
 
-        $this->log("Campos para processar: " . count($fieldArray));
+        $this->log("Fields to process: " . count($fieldArray));
         foreach ($fieldArray as $field) {
-            $this->log("Campo: {$field}");
+            $this->log("Field: {$field}");
         }
 
-        // Processar relações
+        // Process relations
         $relationArray = [];
         $relatedFieldsMap = [];
 
@@ -57,34 +57,34 @@ class CrudGenerator
             $relationGroups = explode(';', $relations);
 
             foreach ($relationGroups as $relationGroup) {
-                // Verificar se o grupo não está vazio
+                // Check if the group is not empty
                 if (empty(trim($relationGroup))) {
                     continue;
                 }
 
-                // Separar em partes: tipo:modelo:campos
+                // Split into parts: type:model:fields
                 $parts = explode(':', $relationGroup);
 
                 if (count($parts) >= 2) {
                     $relationType = trim($parts[0]);
                     $relatedModel = trim($parts[1]);
 
-                    // Adicionar a relação ao array de relações
+                    // Add the relation to the relations array
                     $relationArray[] = $relationType . ':' . $relatedModel;
 
-                    // Se houver campos especificados, processar
+                    // If fields are specified, process them
                     if (count($parts) > 2) {
-                        // Extrair todos os campos do modelo relacionado
+                        // Extract all fields from the related model
                         $relatedFields = [];
 
-                        // Reconstruir a string de campos após o modelo
+                        // Rebuild the fields string after the model
                         $fieldsStr = implode(':', array_slice($parts, 2));
 
-                        // Dividir por vírgula, considerando possíveis vírgulas em valores
+                        // Split by comma, considering possible commas in values
                         preg_match_all($pattern, $fieldsStr, $fieldMatches);
                         if (! empty($fieldMatches[0])) {
                             $relatedFields = $fieldMatches[0];
-                            // Limpar possíveis espaços extras
+                            // Clean possible extra spaces
                             foreach ($relatedFields as $key => $field) {
                                 $relatedFields[$key] = trim($field);
                             }
@@ -92,59 +92,59 @@ class CrudGenerator
 
                         $relatedFieldsMap[$relatedModel] = $relatedFields;
 
-                        $this->log("Campos para modelo relacionado {$relatedModel}: " . count($relatedFields));
+                        $this->log("Fields for related model {$relatedModel}: " . count($relatedFields));
                         foreach ($relatedFields as $field) {
-                            $this->log("Campo relacionado: {$field}");
+                            $this->log("Related field: {$field}");
                         }
                     }
                 }
             }
 
-            // Criar modelos relacionados primeiro
+            // Create related models first
             $this->createRelatedModels($relationArray, $model, $relatedFieldsMap, $softDeletes);
         }
 
-        // Verificar se o modelo já existe, se não, criar
+        // Check if the model already exists, if not, create it
         $this->modelManager->createIfNotExists($model, $softDeletes);
 
-        // Atualizar a migração com os campos
+        // Update the migration with the fields
         $this->migrationManager->updateMigration($model, $fieldArray, $relationArray);
 
-        // Criar o resource do Filament
-        $this->log('Criando resource Filament para ' . $model);
+        // Create the Filament resource
+        $this->log('Creating Filament resource for ' . $model);
         Artisan::call('make:filament-resource', [
             'name' => $model,
             '--generate' => true,
         ]);
 
-        // Atualizar o model com os campos necessários
+        // Update the model with the required fields
         $this->modelManager->updateModel($model, $fieldArray, $relationArray, $softDeletes);
 
-        // Atualizar o resource com os campos
+        // Update the resource with the fields
         $this->resourceUpdater->update($model, $fieldArray, $softDeletes);
 
-        // Criar os Resources do Filament para os modelos relacionados
+        // Create Filament Resources for related models
         if (! empty($relationArray)) {
             $this->createRelatedResources($relationArray, $relatedFieldsMap);
         }
 
-        // Formatar código se necessário
+        // Format code if needed
         if (! $skipCsFixer) {
             $this->codeFormatter->format();
         }
 
-        // Executar migrações se não estiver pulando
+        // Run migrations if not skipping
         if (! $skipMigrations) {
             $this->migrationManager->runMigrations();
         }
 
-        $this->log('CRUD Filament para ' . $model . ' gerado com sucesso!');
+        $this->log('Filament CRUD for ' . $model . ' generated successfully!');
 
         return true;
     }
 
     /**
-     * Cria modelos relacionados
+     * Creates related models
      */
     private function createRelatedModels(array $relationArray, string $mainModel, array $relatedFieldsMap, bool $softDeletes): void
     {
@@ -152,36 +152,36 @@ class CrudGenerator
             if (strpos($relation, ':') !== false) {
                 list($relationType, $relatedModel) = explode(':', $relation);
 
-                // Não criar o modelo principal novamente
+                // Do not create the main model again
                 if ($relatedModel === $mainModel) {
                     continue;
                 }
 
-                // Verificar se o modelo já existe
+                // Check if the model already exists
                 if (! File::exists(app_path('Models/' . $relatedModel . '.php'))) {
-                    $this->log('Criando modelo relacionado ' . $relatedModel);
+                    $this->log('Creating related model ' . $relatedModel);
 
-                    // Criar o modelo
+                    // Create the model
                     $this->modelManager->createIfNotExists($relatedModel, $softDeletes);
 
-                    // Se houver campos definidos para este modelo, atualizar
+                    // If fields are defined for this model, update it
                     if (isset($relatedFieldsMap[$relatedModel])) {
                         $fields = $relatedFieldsMap[$relatedModel];
 
-                        // Atualizar a migração
+                        // Update the migration
                         $this->migrationManager->updateMigration($relatedModel, $fields);
 
-                        // Atualizar o modelo
+                        // Update the model
                         $this->modelManager->updateModel($relatedModel, $fields, [], $softDeletes);
                     }
 
-                    $this->log('Modelo relacionado ' . $relatedModel . ' criado com sucesso!');
+                    $this->log('Related model ' . $relatedModel . ' created successfully!');
                 } else {
-                    $this->log('Modelo relacionado ' . $relatedModel . ' já existe.');
+                    $this->log('Related model ' . $relatedModel . ' already exists.');
 
-                    // Adicionar soft deletes se necessário
+                    // Add soft deletes if needed
                     if ($softDeletes) {
-                        // O modelo já existe, então atualizá-lo com soft deletes
+                        // The model already exists, so update it with soft deletes
                         $this->modelManager->updateModel($relatedModel, [], [], $softDeletes);
                     }
                 }
@@ -190,7 +190,7 @@ class CrudGenerator
     }
 
     /**
-     * Cria recursos Filament para modelos relacionados
+     * Creates Filament resources for related models
      */
     private function createRelatedResources(array $relationArray, array $relatedFieldsMap): void
     {
@@ -200,41 +200,41 @@ class CrudGenerator
             if (strpos($relation, ':') !== false) {
                 list($relationType, $relatedModel) = explode(':', $relation);
 
-                // Evitar duplicação
+                // Avoid duplication
                 if (in_array($relatedModel, $processedModels)) {
                     continue;
                 }
 
                 $processedModels[] = $relatedModel;
 
-                // Verificar se o resource já existe
+                // Check if the resource already exists
                 if (! File::exists(app_path('Filament/Resources/' . $relatedModel . 'Resource.php'))) {
-                    $this->log('Criando resource Filament para ' . $relatedModel);
+                    $this->log('Creating Filament resource for ' . $relatedModel);
 
                     Artisan::call('make:filament-resource', [
                         'name' => $relatedModel,
                         '--generate' => true,
                     ]);
 
-                    // Obter campos personalizados para o modelo relacionado se disponíveis
+                    // Get custom fields for the related model if available
                     $fieldsToUse = isset($relatedFieldsMap[$relatedModel]) ? $relatedFieldsMap[$relatedModel] : [];
 
                     if (! empty($fieldsToUse)) {
-                        $this->log("Atualizando resource de {$relatedModel} com " . count($fieldsToUse) . " campos");
-                        // Atualizar o resource com os campos
+                        $this->log("Updating resource for {$relatedModel} with " . count($fieldsToUse) . " fields");
+                        // Update the resource with the fields
                         $this->resourceUpdater->update($relatedModel, $fieldsToUse, false);
                     } else {
-                        $this->log("Não foram encontrados campos para o modelo relacionado {$relatedModel}");
+                        $this->log("No fields found for related model {$relatedModel}");
                     }
 
-                    $this->log('Resource para ' . $relatedModel . ' criado com sucesso!');
+                    $this->log('Resource for ' . $relatedModel . ' created successfully!');
                 } else {
-                    $this->log('Resource para ' . $relatedModel . ' já existe.');
+                    $this->log('Resource for ' . $relatedModel . ' already exists.');
 
-                    // Atualizar o resource mesmo que já exista
+                    // Update the resource even if it already exists
                     $fieldsToUse = isset($relatedFieldsMap[$relatedModel]) ? $relatedFieldsMap[$relatedModel] : [];
                     if (! empty($fieldsToUse)) {
-                        $this->log("Atualizando resource existente de {$relatedModel} com " . count($fieldsToUse) . " campos");
+                        $this->log("Updating existing resource for {$relatedModel} with " . count($fieldsToUse) . " fields");
                         $this->resourceUpdater->update($relatedModel, $fieldsToUse, false);
                     }
                 }
@@ -243,7 +243,7 @@ class CrudGenerator
     }
 
     /**
-     * Limpa recursos existentes, removendo imports desnecessários e corrigindo problemas
+     * Cleans existing resources, removing unnecessary imports and fixing issues
      */
     public function cleanAllResources(): bool
     {
@@ -251,21 +251,21 @@ class CrudGenerator
 
         foreach ($resourceFiles as $file) {
             $modelName = basename($file, 'Resource.php');
-            $this->log("Limpando resource: {$modelName}");
+            $this->log("Cleaning resource: {$modelName}");
 
             $this->resourceUpdater->update($modelName, [], false);
         }
 
-        // Formatar código
+        // Format code
         $this->codeFormatter->format();
 
-        $this->log('Todos os recursos foram limpos com sucesso!');
+        $this->log('All resources have been cleaned successfully!');
 
         return true;
     }
 
     /**
-     * Log mensagens com diferentes níveis
+     * Logs messages with different levels
      */
     private function log(string $message, string $level = 'info'): void
     {

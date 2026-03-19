@@ -5,7 +5,7 @@ namespace Freis\FilamentCrudGenerator\Commands\FilamentCrud;
 class FormComponentGenerator
 {
     /**
-     * Gera componente de formulário com base no tipo de campo
+     * Generates a form component based on the field type
      */
     public function generate(string $fieldName, string $fieldType, array $validationRules = [], ?string $defaultValue = null): string
     {
@@ -42,7 +42,7 @@ class FormComponentGenerator
             default => "TextInput::make('{$fieldName}')",
         };
 
-        // Adicionar validações se existirem
+        // Add validations if any exist
         if (! empty($validationRules)) {
             foreach ($validationRules as $rule => $value) {
                 $component .= match ($rule) {
@@ -71,7 +71,7 @@ class FormComponentGenerator
             }
         }
 
-        // Adicionar valor padrão se especificado
+        // Add default value if specified
         if ($defaultValue !== null && $defaultValue !== '') {
             if (in_array($fieldType, ['string', 'text', 'textarea', 'longtext', 'email', 'color'])) {
                 $component .= "->default('{$defaultValue}')";
@@ -87,7 +87,7 @@ class FormComponentGenerator
     }
 
     /**
-     * Retorna o tipo de componente com base no tipo de campo
+     * Returns the component type based on the field type
      */
     public function getComponentType(string $fieldType): string
     {
@@ -111,7 +111,7 @@ class FormComponentGenerator
     }
 
     /**
-     * Atualiza o método form com os campos gerados
+     * Updates the form method with the generated fields
      */
     public function updateFormMethod(string $content, array $formFields, CodeValidator $validator): string
     {

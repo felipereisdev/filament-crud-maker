@@ -13,33 +13,33 @@ class MigrationManager
     }
 
     /**
-     * Processa os parâmetros de validação e identifica quais são relevantes para migração
+     * Processes validation parameters and identifies which are relevant for migration
      */
     private function processValidations(string $param): ?array
     {
         $result = null;
 
-        // Validações com 'unique' - transformar em índice único
+        // Validations with 'unique' - transform into unique index
         if ($param === 'unique') {
             $result['unique'] = true;
         }
-        // Ignorar validações min/max/between para valores
+        // Ignore min/max/between validations for values
         elseif (preg_match('/^(min|max|between)=/', $param)) {
-            // Não fazer nada - essas são apenas validações de formulário
+            // Do nothing - these are form-only validations
         }
 
         return $result;
     }
 
     /**
-     * Atualiza a migração com os campos especificados
+     * Updates the migration with the specified fields
      */
     public function updateMigration(string $model, array $fields, array $relationArray = []): bool
     {
         $migrationFiles = File::glob(database_path('migrations/*_create_' . Str::snake(Str::plural($model)) . '_table.php'));
 
         if (empty($migrationFiles)) {
-            $this->log('Arquivo de migração não encontrado.', 'error');
+            $this->log('Migration file not found.', 'error');
 
             return false;
         }
@@ -47,19 +47,19 @@ class MigrationManager
         $migrationFile = $migrationFiles[0];
         $content = File::get($migrationFile);
 
-        // Encontrar a posição para inserir os campos
+        // Find the position to insert the fields
         $tableDefinition = 'Schema::create';
         $closingStatement = '});';
         $startPos = strpos($content, $tableDefinition);
         $endPos = strpos($content, $closingStatement, $startPos);
 
         if ($startPos === false || $endPos === false) {
-            $this->log('Não foi possível encontrar a definição da tabela na migração.', 'error');
+            $this->log('Could not find the table definition in the migration.', 'error');
 
             return false;
         }
 
-        // Construir as definições de campo
+        // Build the field definitions
         $fieldDefinitions = '';
         foreach ($fields as $field) {
             if (strpos($field, ':') !== false) {
@@ -67,10 +67,10 @@ class MigrationManager
                 $fieldName = $parts[0];
                 $fieldType = $parts[1];
 
-                // Mapear tipos de campo especiais para tipos reais de migração
+                // Map special field types to actual migration types
                 $mappedType = $this->mapFieldType($fieldType);
 
-                // Extrair parâmetros adicionais de tipos como decimal(10,2)
+                // Extract additional parameters from types like decimal(10,2)
                 $typeParams = '';
                 if (preg_match('/^(.*?)\((.*?)\)$/', $mappedType, $matches)) {
                     $mappedType = $matches[1];
@@ -79,52 +79,52 @@ class MigrationManager
 
                 $fieldDefinition = "\n            \$table->{$mappedType}('{$fieldName}'";
 
-                // Adicionar parâmetros se houver
+                // Add parameters if any
                 if (! empty($typeParams)) {
                     $fieldDefinition .= ", {$typeParams}";
                 }
 
                 $fieldDefinition .= ")";
 
-                // Processar validações e defaults
+                // Process validations and defaults
                 $isNullable = false;
                 $defaultValue = null;
                 $isUnique = false;
 
-                // Verificar todos os parâmetros extras (após o tipo)
+                // Check all extra parameters (after the type)
                 for ($i = 2; $i < count($parts); $i++) {
                     $param = $parts[$i];
 
-                    // Identificar se é um parâmetro de validação ou valor padrão
+                    // Identify if it is a validation parameter or default value
                     if ($param === 'nullable') {
                         $isNullable = true;
                     } elseif ($param === 'unique') {
                         $isUnique = true;
                     } elseif (strpos($param, '=') !== false || strpos($param, 'required') !== false || strpos($param, 'min') !== false || strpos($param, 'max') !== false) {
-                        // Ignorar parâmetros de validação
+                        // Ignore validation parameters
                         continue;
                     } elseif (is_numeric($param) || in_array($param, ['true', 'false'])) {
                         $defaultValue = $param;
                     }
                 }
 
-                // Aplicar nullable se especificado
+                // Apply nullable if specified
                 if ($isNullable) {
                     $fieldDefinition .= "->nullable()";
                 }
 
-                // Aplicar unique se especificado
+                // Apply unique if specified
                 if ($isUnique) {
                     $fieldDefinition .= "->unique()";
                 }
 
-                // Aplicar valor padrão se especificado
+                // Apply default value if specified
                 if ($defaultValue !== null) {
                     if (in_array($defaultValue, ['true', 'false'])) {
-                        // Valores booleanos
+                        // Boolean values
                         $fieldDefinition .= "->default(" . $defaultValue . ")";
                     } elseif (is_numeric($defaultValue)) {
-                        // Valores numéricos
+                        // Numeric values
                         $fieldDefinition .= "->default(" . $defaultValue . ")";
                     } else {
                         // String
@@ -137,7 +137,7 @@ class MigrationManager
             }
         }
 
-        // Adicionar foreign keys para relações belongsTo
+        // Add foreign keys for belongsTo relations
         if (! empty($relationArray)) {
             foreach ($relationArray as $relation) {
                 if (strpos($relation, ':') !== false) {
@@ -150,12 +150,12 @@ class MigrationManager
             }
         }
 
-        // Adicionar softDeletes se necessário
+        // Add softDeletes if needed
         if (strpos($content, 'softDeletes') === false && strpos($content, 'SoftDeletes') !== false) {
             $fieldDefinitions .= "\n            \$table->softDeletes();";
         }
 
-        // Adicionar a tabela pivot para relações belongsToMany
+        // Add pivot table for belongsToMany relations
         $pivotTables = [];
         if (! empty($relationArray)) {
             $modelPlural = Str::snake(Str::singular($model));
@@ -166,12 +166,12 @@ class MigrationManager
                     if ($relationType === 'belongsToMany') {
                         $relatedModelPlural = Str::snake(Str::singular($relatedModel));
 
-                        // Determinar o nome da tabela pivot (ordem alfabética)
+                        // Determine the pivot table name (alphabetical order)
                         $tables = [$modelPlural, $relatedModelPlural];
                         sort($tables);
                         $pivotTable = implode('_', $tables);
 
-                        // Adicionar apenas se ainda não estiver no array
+                        // Add only if not already in the array
                         if (! in_array($pivotTable, $pivotTables)) {
                             $pivotTables[] = [
                                 'table' => $pivotTable,
@@ -184,10 +184,10 @@ class MigrationManager
             }
         }
 
-        // Inserir os campos na migração
+        // Insert the fields into the migration
         $newContent = substr($content, 0, $endPos) . $fieldDefinitions . "\n" . substr($content, $endPos);
 
-        // Se houver tabelas pivot, adicionar suas definições
+        // If there are pivot tables, add their definitions
         if (! empty($pivotTables)) {
             $pivotContent = '';
             foreach ($pivotTables as $pivot) {
@@ -199,11 +199,11 @@ class MigrationManager
         });";
             }
 
-            // Inserir tabelas pivot após a tabela principal
+            // Insert pivot tables after the main table
             $endOfFirstCreate = strpos($newContent, "});", $endPos) + 3;
             $newContent = substr($newContent, 0, $endOfFirstCreate) . $pivotContent . substr($newContent, $endOfFirstCreate);
 
-            // Atualizar o método down() para excluir as tabelas pivot
+            // Update the down() method to drop the pivot tables
             $downPos = strpos($newContent, "down()");
             $dropPos = strpos($newContent, "Schema::dropIfExists", $downPos);
 
@@ -217,13 +217,13 @@ class MigrationManager
 
         File::put($migrationFile, $newContent);
 
-        $this->log('Migração atualizada com sucesso.');
+        $this->log('Migration updated successfully.');
 
         return true;
     }
 
     /**
-     * Mapeia tipos de campo do comando para tipos reais de migração
+     * Maps command field types to actual migration types
      */
     private function mapFieldType(string $type): string
     {
@@ -238,43 +238,43 @@ class MigrationManager
     }
 
     /**
-     * Executa as migrações
+     * Runs the migrations
      */
     public function runMigrations(?bool $autoConfirm = false): bool
     {
-        $this->log('Executando migrações...');
+        $this->log('Running migrations...');
 
         $confirmMigrate = $autoConfirm;
         if (! $autoConfirm && $this->command) {
-            $confirmMigrate = $this->command->confirm('Deseja executar as migrações agora?', true);
+            $confirmMigrate = $this->command->confirm('Do you want to run migrations now?', true);
         }
 
         if ($confirmMigrate) {
-            $this->log('Executando php artisan migrate');
+            $this->log('Running php artisan migrate');
 
             if ($this->executeCommand('php artisan migrate', false)) {
-                $this->log('Migrações executadas com sucesso!');
+                $this->log('Migrations executed successfully!');
 
                 return true;
             } else {
-                $this->log('Erro ao executar migrações.', 'error');
-                $this->log('Tente executar manualmente: php artisan migrate');
+                $this->log('Error running migrations.', 'error');
+                $this->log('Try running manually: php artisan migrate');
 
                 return false;
             }
         } else {
-            $this->log('Migrações não executadas. Execute manualmente quando estiver pronto: php artisan migrate');
+            $this->log('Migrations not executed. Run manually when ready: php artisan migrate');
 
             return false;
         }
     }
 
     /**
-     * Executa um comando do sistema e retorna o resultado
+     * Executes a system command and returns the result
      */
     private function executeCommand(string $command, bool $returnOutput = false)
     {
-        $this->log("Executando: {$command}");
+        $this->log("Running: {$command}");
 
         if ($returnOutput) {
             return shell_exec($command);
@@ -286,7 +286,7 @@ class MigrationManager
     }
 
     /**
-     * Log mensagens com diferentes níveis
+     * Logs messages with different levels
      */
     private function log(string $message, string $level = 'info'): void
     {

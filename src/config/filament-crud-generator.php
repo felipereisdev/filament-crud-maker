@@ -3,53 +3,53 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Namespace do modelo
+    | Model Namespace
     |--------------------------------------------------------------------------
     |
-    | Este valor define o namespace padrão onde seus modelos serão criados.
+    | This value defines the default namespace where your models will be created.
     |
     */
     'model_namespace' => 'App\\Models',
 
     /*
     |--------------------------------------------------------------------------
-    | Namespace do Resource do Filament
+    | Filament Resource Namespace
     |--------------------------------------------------------------------------
     |
-    | Este valor define o namespace padrão onde os Resources do Filament serão criados.
+    | This value defines the default namespace where Filament Resources will be created.
     |
     */
     'resource_namespace' => 'App\\Filament\\Resources',
 
     /*
     |--------------------------------------------------------------------------
-    | Migração automática
+    | Auto Migration
     |--------------------------------------------------------------------------
     |
-    | Se verdadeiro, executará migrações automaticamente após criar os arquivos,
-    | a menos que a flag --no-migrate seja fornecida.
+    | If true, migrations will be run automatically after creating the files,
+    | unless the --no-migrate flag is provided.
     |
     */
     'auto_migrate' => true,
 
     /*
     |--------------------------------------------------------------------------
-    | Formatação automática
+    | Auto Formatting
     |--------------------------------------------------------------------------
     |
-    | Se verdadeiro, formatará automaticamente os arquivos gerados usando PHP CS Fixer,
-    | a menos que a flag --no-format seja fornecida.
+    | If true, generated files will be automatically formatted using PHP CS Fixer,
+    | unless the --no-format flag is provided.
     |
     */
     'auto_format' => true,
 
     /*
     |--------------------------------------------------------------------------
-    | Configuração do CS Fixer
+    | CS Fixer Configuration
     |--------------------------------------------------------------------------
     |
-    | Nome do arquivo de configuração do PHP CS Fixer a ser usado ou criado.
+    | Name of the PHP CS Fixer configuration file to use or create.
     |
     */
     'cs_fixer_config_file' => '.php-cs-fixer.dist.php',
-]; 
+];

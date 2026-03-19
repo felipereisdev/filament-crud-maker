@@ -17,7 +17,7 @@ class ResourceUpdater
     }
 
     /**
-     * Atualiza um recurso Filament com campos, colunas e filtros
+     * Updates a Filament resource with fields, columns and filters
      *
      * @param array<int, string> $fields
      */
@@ -26,25 +26,25 @@ class ResourceUpdater
         $resourcePath = app_path('Filament/Resources/' . $model . 'Resource.php');
 
         if (! File::exists($resourcePath)) {
-            $this->log("Arquivo de recurso não encontrado: {$resourcePath}", 'error');
+            $this->log("Resource file not found: {$resourcePath}", 'error');
 
             return false;
         }
 
-        // Processar campos
+        // Process fields
         [$formFields, $tableColumns, $filterFields, $formComponents, $tableComponents] = $this->processFields($fields);
 
-        $this->log("Total de campos de formulário: " . count($formFields));
-        $this->log("Total de colunas de tabela: " . count($tableColumns));
-        $this->log("Total de filtros: " . count($filterFields));
+        $this->log("Total form fields: " . count($formFields));
+        $this->log("Total table columns: " . count($tableColumns));
+        $this->log("Total filters: " . count($filterFields));
 
-        // Detectar estrutura de diretórios v4 (Schemas/ + Tables/)
+        // Detect v4 directory structure (Schemas/ + Tables/)
         $resourceDir = app_path('Filament/Resources/' . $model . 'Resource');
         $schemaPath = $resourceDir . '/Schemas/' . $model . 'Form.php';
         $tablePath = $resourceDir . '/Tables/' . $model . 'sTable.php';
 
         if (File::isDirectory($resourceDir . '/Schemas') && File::isDirectory($resourceDir . '/Tables')) {
-            $this->log('Estrutura v4 detectada (Schemas/ + Tables/)');
+            $this->log('V4 structure detected (Schemas/ + Tables/)');
 
             return $this->updateV4Structure(
                 $model,
@@ -59,15 +59,15 @@ class ResourceUpdater
             );
         }
 
-        // Fallback: atualizar inline no arquivo Resource
-        $this->log('Estrutura inline detectada (fallback)');
+        // Fallback: update inline in the Resource file
+        $this->log('Inline structure detected (fallback)');
         $usedComponents = array_unique(array_merge($formComponents, $tableComponents));
 
         return $this->updateInlineResource($model, $resourcePath, $formFields, $tableColumns, $filterFields, $usedComponents, $softDeletes);
     }
 
     /**
-     * Processa campos e retorna arrays separados para form e table
+     * Processes fields and returns separate arrays for form and table
      *
      * @param array<int, string> $fields
      * @return array{0: array<int, string>, 1: array<int, string>, 2: array<int, string>, 3: array<int, string>, 4: array<int, string>}
@@ -85,12 +85,12 @@ class ResourceUpdater
                 continue;
             }
 
-            // Dividir o campo no formato nome:tipo:default:validações
+            // Split the field in format name:type:default:validations
             $parts = explode(':', $field);
             $fieldName = trim($parts[0]);
             $fieldType = trim($parts[1]);
 
-            // Extrair validações e valores padrão
+            // Extract validations and default values
             $validationRules = [];
             $defaultValue = null;
 
@@ -112,25 +112,25 @@ class ResourceUpdater
                 }
             }
 
-            $this->log("Processando campo: {$fieldName} do tipo {$fieldType}" .
-                       ($defaultValue ? " com valor padrão {$defaultValue}" : '') .
-                       (! empty($validationRules) ? ' e ' . count($validationRules) . ' validações' : ''));
+            $this->log("Processing field: {$fieldName} of type {$fieldType}" .
+                       ($defaultValue ? " with default value {$defaultValue}" : '') .
+                       (! empty($validationRules) ? ' and ' . count($validationRules) . ' validations' : ''));
 
-            // Gerar componente de formulário
+            // Generate form component
             $formComponent = $this->formGenerator->generate($fieldName, $fieldType, $validationRules, $defaultValue);
             if ($formComponent) {
                 $formFields[] = $formComponent;
                 $formComponents[] = $this->formGenerator->getComponentType($fieldType);
             }
 
-            // Gerar coluna de tabela
+            // Generate table column
             $tableColumn = $this->tableGenerator->generateColumn($fieldName, $fieldType, $validationRules, $defaultValue);
             if ($tableColumn) {
                 $tableColumns[] = $tableColumn;
                 $tableComponents[] = $this->tableGenerator->getComponentType($fieldType, 'column');
             }
 
-            // Gerar filtro
+            // Generate filter
             $filter = $this->tableGenerator->generateFilter($fieldName, $fieldType, $validationRules);
             if ($filter) {
                 $filterFields[] = $filter;
@@ -143,14 +143,14 @@ class ResourceUpdater
 
         $allComponents = array_unique(array_merge($formComponents, $tableComponents));
         if (! empty($allComponents)) {
-            $this->log('Componentes usados: ' . implode(', ', $allComponents));
+            $this->log('Components used: ' . implode(', ', $allComponents));
         }
 
         return [$formFields, $tableColumns, $filterFields, $formComponents, $tableComponents];
     }
 
     /**
-     * Atualiza arquivos separados de Schema e Table (estrutura Filament v4)
+     * Updates separate Schema and Table files (Filament v4 structure)
      *
      * @param array<int, string> $formFields
      * @param array<int, string> $tableColumns
@@ -169,14 +169,14 @@ class ResourceUpdater
         array $tableComponents,
         bool $softDeletes
     ): bool {
-        // Atualizar arquivo de Schema (formulário)
+        // Update Schema file (form)
         if (! empty($formFields) && File::exists($schemaPath)) {
             if (! $this->updateSchemaFile($model, $schemaPath, $formFields, $formComponents)) {
                 return false;
             }
         }
 
-        // Atualizar arquivo de Table (colunas, filtros, ações)
+        // Update Table file (columns, filters, actions)
         if ((! empty($tableColumns) || ! empty($filterFields)) && File::exists($tablePath)) {
             if (! $this->updateTableFile($model, $tablePath, $tableColumns, $filterFields, $tableComponents, $softDeletes)) {
                 return false;
@@ -187,7 +187,7 @@ class ResourceUpdater
     }
 
     /**
-     * Atualiza o arquivo de Schema com os campos do formulário
+     * Updates the Schema file with the form fields
      *
      * @param array<int, string> $formFields
      * @param array<int, string> $formComponents
@@ -202,22 +202,22 @@ class ResourceUpdater
 
         $tempFile = storage_path('app/debug_schema_' . $model . '.php');
         File::put($tempFile, $content);
-        $this->log("Versão para depuração do Schema salva em: {$tempFile}");
+        $this->log("Debug version of Schema saved at: {$tempFile}");
 
         if (! $this->codeValidator->validateSyntax($content)) {
-            $this->log('Erro na sintaxe do código gerado no Schema.', 'error');
+            $this->log('Syntax error in generated Schema code.', 'error');
 
             return false;
         }
 
         File::put($schemaPath, $content);
-        $this->log("Schema {$model}Form atualizado com sucesso!");
+        $this->log("Schema {$model}Form updated successfully!");
 
         return true;
     }
 
     /**
-     * Atualiza o arquivo de Table com colunas, filtros e ações
+     * Updates the Table file with columns, filters and actions
      *
      * @param array<int, string> $tableColumns
      * @param array<int, string> $filterFields
@@ -239,22 +239,22 @@ class ResourceUpdater
 
         $tempFile = storage_path('app/debug_table_' . $model . '.php');
         File::put($tempFile, $content);
-        $this->log("Versão para depuração da Table salva em: {$tempFile}");
+        $this->log("Debug version of Table saved at: {$tempFile}");
 
         if (! $this->codeValidator->validateSyntax($content)) {
-            $this->log('Erro na sintaxe do código gerado na Table.', 'error');
+            $this->log('Syntax error in generated Table code.', 'error');
 
             return false;
         }
 
         File::put($tablePath, $content);
-        $this->log("Table {$model}sTable atualizado com sucesso!");
+        $this->log("Table {$model}sTable updated successfully!");
 
         return true;
     }
 
     /**
-     * Atualiza o recurso inline (comportamento original/fallback)
+     * Updates the inline resource (original/fallback behavior)
      *
      * @param array<int, string> $formFields
      * @param array<int, string> $tableColumns
@@ -285,22 +285,22 @@ class ResourceUpdater
 
         $tempFile = storage_path('app/debug_resource_' . $model . '.php');
         File::put($tempFile, $content);
-        $this->log("Versão para depuração salva em: {$tempFile}");
+        $this->log("Debug version saved at: {$tempFile}");
 
         if (! $this->codeValidator->validateSyntax($content)) {
-            $this->log('Erro na sintaxe do código gerado. Verificando os problemas...', 'error');
+            $this->log('Syntax error in generated code. Checking for issues...', 'error');
 
             return false;
         }
 
         File::put($resourcePath, $content);
-        $this->log("Resource {$model} atualizado com sucesso!");
+        $this->log("Resource {$model} updated successfully!");
 
         return true;
     }
 
     /**
-     * Log mensagens com diferentes níveis
+     * Logs messages with different levels
      */
     private function log(string $message, string $level = 'info'): void
     {

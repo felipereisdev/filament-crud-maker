@@ -1,62 +1,62 @@
-# Contribuindo para o FilamentCrudGenerator
+# Contributing to FilamentCrudGenerator
 
-Agradecemos seu interesse em contribuir com o pacote FilamentCrudGenerator! Este documento fornece algumas diretrizes para ajudar no processo de contribuição.
+Thank you for your interest in contributing to the FilamentCrudGenerator package! This document provides some guidelines to help with the contribution process.
 
-## Reportando bugs
+## Reporting bugs
 
-Se você encontrou um bug, por favor crie uma issue no repositório GitHub com as seguintes informações:
+If you found a bug, please create an issue on the GitHub repository with the following information:
 
-- Título claro e descritivo
-- Passos detalhados para reproduzir o bug
-- Comportamento esperado versus comportamento atual
-- Screenshots, se aplicável
-- Versões do PHP, Laravel e Filament em uso
-- Qualquer outra informação que possa ser útil
+- Clear and descriptive title
+- Detailed steps to reproduce the bug
+- Expected behavior versus actual behavior
+- Screenshots, if applicable
+- PHP, Laravel, and Filament versions in use
+- Any other information that may be useful
 
-## Solicitando funcionalidades
+## Requesting features
 
-Adoramos receber sugestões de novas funcionalidades! Para solicitar uma nova funcionalidade, por favor:
+We love receiving suggestions for new features! To request a new feature, please:
 
-- Verifique se a funcionalidade já não foi solicitada nas issues abertas
-- Abra uma nova issue com um título claro
-- Descreva a funcionalidade em detalhes, incluindo casos de uso
-- Explique por que a funcionalidade seria útil para a maioria dos usuários
+- Check if the feature has not already been requested in the open issues
+- Open a new issue with a clear title
+- Describe the feature in detail, including use cases
+- Explain why the feature would be useful for most users
 
-## Processo de pull request
+## Pull request process
 
-1. Faça um fork do repositório
-2. Clone seu fork localmente
-3. Crie uma branch para suas alterações: `git checkout -b feature/nome-da-funcionalidade` ou `fix/nome-do-bug`
-4. Faça suas alterações
-5. Execute os testes, se disponíveis
-6. Formate o código usando PHP CS Fixer: `composer cs-fix`
-7. Commit suas mudanças: `git commit -m 'Descrição clara da alteração'`
-8. Push para sua branch: `git push origin feature/nome-da-funcionalidade`
-9. Abra um pull request no repositório original
+1. Fork the repository
+2. Clone your fork locally
+3. Create a branch for your changes: `git checkout -b feature/feature-name` or `fix/bug-name`
+4. Make your changes
+5. Run the tests, if available
+6. Format the code using PHP CS Fixer: `composer cs-fix`
+7. Commit your changes: `git commit -m 'Clear description of the change'`
+8. Push to your branch: `git push origin feature/feature-name`
+9. Open a pull request on the original repository
 
-## Padrões de código
+## Code standards
 
-- Siga o PSR-12 para formatação de código
-- Escreva comentários claros para classes e métodos
-- Mantenha uma cobertura de testes adequada
-- Use tipos escalares e tipos de retorno em PHP
+- Follow PSR-12 for code formatting
+- Write clear comments for classes and methods
+- Maintain adequate test coverage
+- Use scalar types and return types in PHP
 
-## Desenvolvimento local
+## Local development
 
-1. Clone o repositório
-2. Instale as dependências: `composer install`
-3. Crie uma aplicação Laravel de teste para testar suas alterações
+1. Clone the repository
+2. Install dependencies: `composer install`
+3. Create a test Laravel application to test your changes
 
-## Testes
+## Tests
 
-Antes de enviar suas alterações, certifique-se de executar todos os testes:
+Before submitting your changes, make sure to run all tests:
 
 ```bash
 composer test
 ```
 
-## Licença
+## License
 
-Ao contribuir para este projeto, você concorda que suas contribuições serão licenciadas sob a mesma licença MIT que cobre o projeto.
+By contributing to this project, you agree that your contributions will be licensed under the same MIT license that covers the project.
 
-Obrigado pela sua contribuição! 
+Thank you for your contribution!
