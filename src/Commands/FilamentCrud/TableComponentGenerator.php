@@ -144,7 +144,7 @@ class TableComponentGenerator
             return $content;
         }
 
-        if (preg_match('/public\s+static\s+function\s+table\s*\(\s*Table\s+\$table\s*\)\s*:.*?\{/s', $content, $tableMatches, PREG_OFFSET_CAPTURE)) {
+        if (preg_match('/public\s+(?:static\s+)?function\s+(?:table|configure)\s*\(\s*Table\s+\$table\s*\)\s*:.*?\{/s', $content, $tableMatches, PREG_OFFSET_CAPTURE)) {
             $tableStartPos = $tableMatches[0][1];
             $openBracePos = strpos($content, '{', $tableStartPos);
             $closeBracePos = $validator->findMatchingCloseBrace($content, $openBracePos);

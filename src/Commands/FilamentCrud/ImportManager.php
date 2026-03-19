@@ -154,4 +154,106 @@ class ImportManager
 
         return $content;
     }
+
+    /**
+     * Adiciona importações para arquivos de Schema (formulário v4)
+     *
+     * @param array<int, string> $formComponents
+     */
+    public function addFormFileImports(string $content, array $formComponents): string
+    {
+        $imports = ['use Filament\Schemas\Schema;'];
+
+        foreach ($formComponents as $component) {
+            if (isset(self::IMPORT_MAP[$component]) && str_starts_with(self::IMPORT_MAP[$component], 'Filament\Forms\Components\\')) {
+                $imports[] = 'use ' . self::IMPORT_MAP[$component] . ';';
+            }
+        }
+
+        $imports = array_unique($imports);
+        sort($imports);
+
+        return $this->insertImportsIntoContent($content, $imports);
+    }
+
+    /**
+     * Adiciona importações para arquivos de Table (colunas, filtros, ações v4)
+     *
+     * @param array<int, string> $tableComponents
+     */
+    public function addTableFileImports(string $content, array $tableComponents, bool $softDeletes): string
+    {
+        // Verificar se Builder está sendo usado no código
+        $needsBuilder = (bool) preg_match('/function\s*\(\s*Builder|\(\s*Builder\s*\$|\:\s*Builder|use\s+function.*?Builder|fn\s*\(\s*Builder/', $content);
+
+        // Verificar se DatePicker é usado em filtros
+        if (in_array('Filter', $tableComponents, true) && (
+            str_contains($content, 'DatePicker::make') ||
+            (bool) preg_match('/date|datetime/', $content)
+        )) {
+            $tableComponents[] = 'DatePicker';
+        }
+
+        // Verificar se TextInput é usado em filtros numéricos
+        if (in_array('Filter', $tableComponents, true) && (
+            (bool) preg_match('/numeric|integer|decimal|float|double/', $content) ||
+            str_contains($content, 'TextInput::make')
+        )) {
+            $tableComponents[] = 'TextInput';
+        }
+
+        // Sempre adicionar ações
+        $tableComponents[] = 'EditAction';
+        $tableComponents[] = 'BulkActionGroup';
+        $tableComponents[] = 'DeleteBulkAction';
+
+        $imports = ['use Filament\Tables\Table;'];
+
+        foreach (array_unique($tableComponents) as $component) {
+            if (isset(self::IMPORT_MAP[$component])) {
+                $imports[] = 'use ' . self::IMPORT_MAP[$component] . ';';
+            }
+        }
+
+        if ($needsBuilder) {
+            $imports[] = 'use Illuminate\Database\Eloquent\Builder;';
+        }
+
+        if ($softDeletes) {
+            $imports[] = 'use Illuminate\Database\Eloquent\SoftDeletingScope;';
+            $imports[] = 'use Filament\Tables\Filters\TrashedFilter;';
+        }
+
+        $imports = array_unique($imports);
+        sort($imports);
+
+        return $this->insertImportsIntoContent($content, $imports);
+    }
+
+    /**
+     * Insere importações no conteúdo após a declaração de namespace
+     *
+     * @param array<int, string> $imports
+     */
+    private function insertImportsIntoContent(string $content, array $imports): string
+    {
+        if (preg_match('/namespace\s+[^;]+;/', $content, $matches, PREG_OFFSET_CAPTURE)) {
+            $namespaceEndPos = $matches[0][1] + strlen($matches[0][0]);
+            $afterNamespace = substr($content, $namespaceEndPos);
+
+            if (preg_match('/\bclass\s+\w+/', $afterNamespace, $classMatches, PREG_OFFSET_CAPTURE)) {
+                $classPos = $classMatches[0][1];
+                $importSection = substr($afterNamespace, 0, $classPos);
+
+                // Remover importações existentes
+                $importSection = preg_replace('/use\s+[^;]+;\s*/', '', $importSection);
+
+                // Substituir por novas importações
+                $importString = "\n\n" . implode("\n", $imports) . "\n\n";
+                $content = substr($content, 0, $namespaceEndPos) . $importString . substr($afterNamespace, $classPos);
+            }
+        }
+
+        return $content;
+    }
 }
